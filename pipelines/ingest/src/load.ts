@@ -28,6 +28,8 @@ const UPSERT_COLUMNS = [
 type Row = Record<string, unknown>;
 
 export function contentHash(n: ParsedNode): string {
+  // Cover every parser-derived column the loader writes — otherwise a parser
+  // fix (e.g. to source-credit parsing) never propagates on re-ingest.
   const canonical = JSON.stringify([
     n.identifier,
     n.nodeType,
@@ -38,6 +40,9 @@ export function contentHash(n: ParsedNode): string {
     n.bodyText,
     n.bodyHtml,
     n.sourceCredit,
+    n.enactingPl,
+    n.enactedDate,
+    n.amendmentCount,
   ]);
   return createHash('sha256').update(canonical).digest('hex');
 }
