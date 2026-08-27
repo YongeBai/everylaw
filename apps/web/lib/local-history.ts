@@ -14,19 +14,24 @@ export type LocalVote = {
 
 const KEY = "everylaw:votes";
 
+// Parsed once per page: 25 list rows shouldn't JSON.parse the same blob 25×.
+let cached: Record<number, LocalVote> | null = null;
+
 export function readLocalVotes(): Record<number, LocalVote> {
+  if (cached) return cached;
   try {
     const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Record<number, LocalVote>) : {};
+    cached = raw ? (JSON.parse(raw) as Record<number, LocalVote>) : {};
   } catch {
-    return {};
+    cached = {};
   }
+  return cached;
 }
 
 export function recordLocalVote(vote: LocalVote): void {
   try {
-    const all = readLocalVotes();
-    all[vote.id] = vote;
+    const all = { ...readLocalVotes(), [vote.id]: vote };
+    cached = all;
     window.localStorage.setItem(KEY, JSON.stringify(all));
   } catch {
     /* storage unavailable (private mode etc.) — the site works without it */

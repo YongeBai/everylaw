@@ -12,13 +12,18 @@ export function OfficialText({ html }: { html: string }) {
   const [active, setActive] = useState<string | null>(null);
   const definition = active ? TERM_DEFINITIONS.find((entry) => entry.term.toLowerCase() === active.toLowerCase()) ?? null : null;
 
-  function onClick(event: React.MouseEvent) {
-    const target = (event.target as HTMLElement).closest("[data-term]");
+  function toggleFrom(node: EventTarget | null) {
+    const target = (node as HTMLElement | null)?.closest?.("[data-term]");
     if (target) setActive((now) => (now === target.getAttribute("data-term") ? null : target.getAttribute("data-term")));
   }
 
+  // The markers carry role="button" tabindex="0" — honor keyboard activation too.
+  function onKeyDown(event: React.KeyboardEvent) {
+    if (event.key === "Enter" || event.key === " ") { toggleFrom(event.target); if ((event.target as HTMLElement).closest?.("[data-term]")) event.preventDefault(); }
+  }
+
   return <div>
-    <div className={styles.officialBody} data-testid="official-text" onClick={onClick} dangerouslySetInnerHTML={{ __html: html }} />
+    <div className={styles.officialBody} data-testid="official-text" onClick={(event) => toggleFrom(event.target)} onKeyDown={onKeyDown} dangerouslySetInnerHTML={{ __html: html }} />
     {definition && <aside className={styles.termDef} data-testid="term-definition" role="note">
       <b>“{definition.term}”</b>
       <p>{definition.definition}</p>

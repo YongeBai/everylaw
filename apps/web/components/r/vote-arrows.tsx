@@ -17,9 +17,20 @@ export function VoteArrows({ nodeId, citation, heading, url, keepCount, dissolve
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Fast local seed for every row; on post pages also ask the server, whose
+    // cookie identity outlives localStorage (fresh browser, cleared storage).
     const stored = readLocalVotes()[nodeId];
     if (stored) setMine(stored.direction);
-  }, [nodeId]);
+    if (size !== "post") return;
+    const controller = new AbortController();
+    fetch(`/api/vote?nodeId=${nodeId}`, { signal: controller.signal }).then(async (response) => {
+      if (!response.ok) return;
+      const result = await response.json();
+      setCounts({ keep: result.keepCount, dissolve: result.dissolveCount });
+      if (result.direction === "keep" || result.direction === "dissolve") setMine(result.direction);
+    }).catch(() => { /* seed stays local */ });
+    return () => controller.abort();
+  }, [nodeId, size]);
 
   async function vote(direction: "keep" | "dissolve") {
     setError("");

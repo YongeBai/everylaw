@@ -63,6 +63,10 @@ export function RandomFeed() {
 
   useEffect(() => { void loadMore(); }, [loadMore]);
 
+  // Recreate the observer after each batch: observers only fire on threshold
+  // crossings, and the sentinel can stay inside the margin across a load — a
+  // fresh observer always delivers an initial callback, so loading continues
+  // until the sentinel is genuinely out of reach.
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -71,7 +75,7 @@ export function RandomFeed() {
     }, { rootMargin: "600px" });
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loadMore]);
+  }, [loadMore, laws.length]);
 
   return <div data-testid="random-feed">
     {laws.map((law) => <article key={law.id} className={styles.section} style={{ marginBottom: 14 }} data-testid={`random-card-${law.id}`}>
@@ -84,7 +88,7 @@ export function RandomFeed() {
         <div>
           {law.explanation || law.summary
             ? <div className={styles.translationBody}>{law.explanation ?? law.summary}</div>
-            : <div className={styles.translationBody}><i style={{ color: "#888" }}>No reviewed translation yet — the law itself:</i> {law.excerpt}{law.excerpt.length >= 400 ? "…" : ""}</div>}
+            : <div className={styles.translationBody}><i style={{ color: "#888" }}>No reviewed translation yet — the law itself:</i> {law.excerpt.length >= 400 ? law.excerpt.replace(/\s+\S*$/, "") + "…" : law.excerpt}</div>}
           <p className={styles.buttons} style={{ marginTop: 8 }}>
             <Link href={law.url}>full text &amp; history</Link>
             <Link href={law.url}>cases</Link>

@@ -3,6 +3,12 @@
  * title covers: r/title-18-CRIMES-AND-CRIMINAL-PROCEDURE. Names mirror the
  * ingested USC title headings (release 119-102); bare r/title-18 still resolves.
  */
+/** Header topbar picks: title number + hand-shortened label (not derivable from the heading). */
+export const TOPBAR_TITLES: [number, string][] = [
+  [18, "crimes"], [21, "food&drugs"], [26, "taxes"], [47, "telecom"], [15, "commerce"],
+  [42, "health"], [16, "conservation"], [49, "transportation"], [7, "agriculture"], [38, "veterans"],
+];
+
 export const TITLE_NAMES: Record<number, string> = {
   1: "GENERAL-PROVISIONS",
   2: "THE-CONGRESS",

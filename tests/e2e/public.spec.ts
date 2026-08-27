@@ -5,8 +5,8 @@ function trackErrors(page: Page) { const errors: string[] = []; page.on("pageerr
 test("browse and law reading flows", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/r");
-  await expect(page.getByRole("link", { name: /r\/title-53 — Reserved/ })).toBeVisible();
-  await page.getByRole("link", { name: /Crimes and Criminal Procedure/i }).click();
+  await expect(page.getByRole("link", { name: /r\/title-53-RESERVED/ })).toBeVisible();
+  await page.getByRole("link", { name: /title-18-CRIMES-AND-CRIMINAL-PROCEDURE/ }).click();
   await expect(page.getByTestId("subreddit-title")).toContainText(/crimes and criminal procedure/i);
   await page.getByTestId("subreddit-pages").getByRole("link", { name: "next ›" }).click();
   await expect(page.getByTestId("subreddit-pages")).toContainText(/page 2 of/);

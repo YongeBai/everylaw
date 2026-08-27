@@ -1,14 +1,18 @@
 import { sql } from "drizzle-orm";
 import { db } from "@everylaw/db";
+import { titleFromIdentifier } from "@/lib/reddit-format";
 
-export type RSort = "hot" | "top" | "controversial" | "dissolved" | "kept";
+export type RSort = "hot" | "top" | "controversial" | "dissolved" | "kept" | "order";
 export const R_SORTS: { key: RSort; label: string }[] = [
   { key: "hot", label: "hot" },
   { key: "top", label: "top" },
   { key: "controversial", label: "controversial" },
   { key: "dissolved", label: "most dissolved" },
   { key: "kept", label: "most kept" },
+  { key: "order", label: "in order" },
 ];
+
+export const isSort = (value: string): value is RSort => R_SORTS.some((sort) => sort.key === value);
 
 export type RPost = {
   id: number; identifier: string; citation: string; num: string; heading: string; status: string;
@@ -21,7 +25,7 @@ function mapPost(row: Record<string, unknown>): RPost {
   return {
     id: Number(row.id), identifier: String(row.identifier), citation: String(row.citation),
     num: String(row.num), heading: String(row.heading), status: String(row.status),
-    title: Number(String(row.identifier).match(/\/t(\d+)/)?.[1] ?? 0),
+    title: titleFromIdentifier(String(row.identifier)),
     wordCount: Number(row.word_count), enactedDate: row.enacted_date ? String(row.enacted_date) : null,
     enactingPl: row.enacting_pl ? String(row.enacting_pl) : null,
     keepCount: Number(row.keep_count ?? 0), dissolveCount: Number(row.dissolve_count ?? 0),
@@ -36,6 +40,8 @@ const ORDERS: Record<RSort, ReturnType<typeof sql.raw>> = {
   controversial: sql.raw("(CASE WHEN COALESCE(v.total_count,0) >= 3 THEN abs(COALESCE(v.dissolve_ratio,0.5) - 0.5) ELSE 1 END) ASC, total_count DESC"),
   dissolved: sql.raw("dissolve_count DESC, total_count DESC, n.sort_key"),
   kept: sql.raw("keep_count DESC, total_count DESC, n.sort_key"),
+  // The code's own order: title, then chapter/section as Congress publishes them.
+  order: sql.raw("n.sort_key"),
 };
 
 export async function getRPosts(sort: RSort, titleNum?: number, limit = 25, offset = 0): Promise<RPost[]> {
@@ -58,14 +64,4 @@ export async function getRPosts(sort: RSort, titleNum?: number, limit = 25, offs
   return rows.map(mapPost);
 }
 
-export async function getCommentCount(nodeId: number): Promise<number> {
-  const rows = await db.execute(sql`SELECT count(*)::int cnt FROM takes WHERE node_id=${nodeId} AND moderation_status='published'`);
-  return Number(rows[0]?.cnt ?? 0);
-}
 
-export { agePhrase, officialSourceUrl } from "@/lib/reddit-format";
-import { rPostUrlFrom } from "@/lib/reddit-format";
-
-export function rPostUrl(post: Pick<RPost, "title" | "num" | "identifier">): string {
-  return rPostUrlFrom(post.title, post.num, post.identifier);
-}

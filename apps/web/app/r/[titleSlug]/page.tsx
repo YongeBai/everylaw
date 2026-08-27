@@ -1,18 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getTitles } from "@/lib/data";
+import { getTitleInfo } from "@/lib/data";
 import { subredditSlug, titleNumberFromSlug } from "@/lib/title-names";
 import { RHeader } from "@/components/r/header";
 import { PostList } from "@/components/r/post-list";
-import { getRPosts, R_SORTS, type RSort } from "@/lib/reddit-data";
+import { getRPosts, isSort, R_SORTS, type RSort } from "@/lib/reddit-data";
 import styles from "../reddit.module.css";
 
 type Props = { params: Promise<{ titleSlug: string }>; searchParams: Promise<{ sort?: string; page?: string }> };
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 25;
-
-const isSort = (value: string): value is RSort => R_SORTS.some((sort) => sort.key === value);
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { titleSlug } = await params;
@@ -31,12 +29,11 @@ export default async function Subreddit({ params, searchParams }: Props) {
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   // The named slug is canonical; bare r/title-18 (and stale names) land here too.
   const canonical = subredditSlug(titleNum);
-  if (titleSlug !== canonical) redirect(`/r/${canonical}?${new URLSearchParams({ ...(sort !== "hot" ? { sort } : {}), ...(page > 1 ? { page: String(page) } : {}) })}`.replace(/\?$/, ""));
-  const [posts, titles] = await Promise.all([getRPosts(sort, titleNum, PAGE_SIZE, (page - 1) * PAGE_SIZE), getTitles()]);
-  const info = titles.find((title) => Number(title.num) === titleNum);
+  const pageUrl = (target: number) => `/r/${canonical}?${new URLSearchParams({ ...(sort !== "hot" ? { sort } : {}), ...(target > 1 ? { page: String(target) } : {}) })}`.replace(/\?$/, "");
+  if (titleSlug !== canonical) redirect(pageUrl(page));
+  const [posts, info] = await Promise.all([getRPosts(sort, titleNum, PAGE_SIZE, (page - 1) * PAGE_SIZE), getTitleInfo(titleNum)]);
   if (!info) notFound();
   const pageCount = Math.max(1, Math.ceil(info.sectionCount / PAGE_SIZE));
-  const pageUrl = (target: number) => `/r/${canonical}?${new URLSearchParams({ ...(sort !== "hot" ? { sort } : {}), ...(target > 1 ? { page: String(target) } : {}) })}`.replace(/\?$/, "");
 
   return <div className={styles.page}>
     <RHeader activeTitle={titleSlug} />
@@ -45,7 +42,7 @@ export default async function Subreddit({ params, searchParams }: Props) {
     </nav>
     <div className={styles.shell}>
       <main className={styles.main}>
-        <h1 style={{ font: "700 16px Verdana, sans-serif", margin: "4px 4px 8px" }} data-testid="subreddit-title">r/{canonical} — {info.heading}</h1>
+        <h1 className={styles.pageTitle} data-testid="subreddit-title">r/{canonical} — {info.heading}</h1>
         <PostList posts={posts} startRank={(page - 1) * PAGE_SIZE + 1} />
         <nav className={styles.tagline} style={{ padding: "8px 4px" }} aria-label="Pages" data-testid="subreddit-pages">view more:{" "}
           {page > 1 ? <Link href={pageUrl(page - 1)} rel="prev">‹ prev</Link> : <span>‹ prev</span>}

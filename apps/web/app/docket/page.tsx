@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { rPostUrl } from "@/lib/reddit-data";
+import { lawUrl } from "@/lib/reddit-format";
 import { DOCKET_DESIGN } from "./design";
 import { DocketTrial } from "./docket-trial";
 import { getDocket } from "./pick";
@@ -17,7 +17,7 @@ export default async function DocketPage() {
 
   // "classic": today's trial IS a normal law post — everyone gets the same
   // random-for-the-day law, presented exactly like any other, plus a banner.
-  if (DOCKET_DESIGN === "classic") redirect(`${rPostUrl(docket.law)}?trial=${docket.trialNumber}`);
+  if (DOCKET_DESIGN === "classic") redirect(`${lawUrl(docket.law)}?trial=1`);
 
   return <DocketTrial docket={docket} />;
 }

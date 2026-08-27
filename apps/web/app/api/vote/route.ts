@@ -28,8 +28,10 @@ export async function POST(request: NextRequest) {
       VALUES (${input.nodeId}, ${identity.voterHash}, ${identity.ipHash}, ${identity.userAgentHash}, ${input.direction}::vote_direction)
       ON CONFLICT (node_id, voter_hash) DO UPDATE SET direction=EXCLUDED.direction, ip_hash=EXCLUDED.ip_hash, user_agent_hash=EXCLUDED.user_agent_hash, updated_at=now()
     `);
-    await recordInteraction("vote", identity);
-    const aggregate = await db.execute(sql`SELECT keep_count, dissolve_count, total_count, dissolve_ratio FROM vote_aggregates WHERE node_id=${input.nodeId}`);
+    const [, aggregate] = await Promise.all([
+      recordInteraction("vote", identity),
+      db.execute(sql`SELECT keep_count, dissolve_count, total_count, dissolve_ratio FROM vote_aggregates WHERE node_id=${input.nodeId}`),
+    ]);
     const row = aggregate[0]!;
     return NextResponse.json({ keepCount: Number(row.keep_count), dissolveCount: Number(row.dissolve_count), totalCount: Number(row.total_count), dissolveRatio: Number(row.dissolve_ratio), direction: input.direction });
   } catch (error) {

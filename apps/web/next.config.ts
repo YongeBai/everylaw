@@ -8,7 +8,6 @@ import { readFileSync } from "node:fs";
 const webEnvironment = new Set([
   "DATABASE_URL",
   "VOTER_HASH_SECRET",
-  "VOTE_HASH_SECRET",
   "NEXT_PUBLIC_BASE_URL",
   "NEXT_PUBLIC_PLAUSIBLE_DOMAIN",
   "ADMIN_PASSWORD",

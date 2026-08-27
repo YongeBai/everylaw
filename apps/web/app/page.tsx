@@ -2,13 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { RHeader } from "@/components/r/header";
 import { PostList } from "@/components/r/post-list";
-import { getRPosts, R_SORTS, type RSort } from "@/lib/reddit-data";
+import { getRPosts, isSort, R_SORTS, type RSort } from "@/lib/reddit-data";
 import styles from "@/app/r/reddit.module.css";
 
 export const metadata: Metadata = { title: "EveryLaw — the front page of the U.S. Code", description: "Every federal law, readable and judged in public: plain-English translations, real history, and a keep-or-dissolve signal on each section." };
 export const dynamic = "force-dynamic";
-
-const isSort = (value: string): value is RSort => R_SORTS.some((sort) => sort.key === value);
 
 export default async function FrontPage({ searchParams }: { searchParams: Promise<{ sort?: string }> }) {
   const { sort: raw } = await searchParams;

@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import type { NextRequest } from "next/server";
 
-const secret = process.env.VOTER_HASH_SECRET ?? process.env.VOTE_HASH_SECRET;
-if (!secret) throw new Error("VOTER_HASH_SECRET (or legacy VOTE_HASH_SECRET) is required");
+const secret = process.env.VOTER_HASH_SECRET;
+if (!secret) throw new Error("VOTER_HASH_SECRET is required");
 
 export function hashValue(value: string) { return createHash("sha256").update(`${value}:${secret}`).digest("hex"); }
 

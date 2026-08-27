@@ -11,23 +11,24 @@ export default function HistoryPage() {
   useEffect(() => { setVotes(Object.values(readLocalVotes()).sort((a, b) => b.ts - a.ts)); }, []);
 
   const hottest = votes && votes.length > 0
-    ? [...votes].sort((a, b) => dissentShare(b) - dissentShare(a))[0]
+    ? votes.reduce((top, vote) => (dissentShare(vote) > dissentShare(top) ? vote : top))
     : null;
+  const hottestDissent = hottest ? dissentShare(hottest) : 0;
   const kept = votes?.filter((vote) => vote.direction === "keep").length ?? 0;
   const dissolved = votes?.filter((vote) => vote.direction === "dissolve").length ?? 0;
   const shareText = votes && votes.length > 0
-    ? `My EveryLaw record: ${votes.length} laws judged — ${kept} kept, ${dissolved} dissolved.${hottest && dissentShare(hottest) > 0.5 ? ` Hottest take: ${hottest.direction.toUpperCase()} on ${hottest.citation}, against ${Math.round(dissentShare(hottest) * 100)}% of voters.` : ""} everylaw.us`
+    ? `My EveryLaw record: ${votes.length} laws judged — ${kept} kept, ${dissolved} dissolved.${hottest && hottestDissent > 0.5 ? ` Hottest take: ${hottest.direction.toUpperCase()} on ${hottest.citation}, against ${Math.round(hottestDissent * 100)}% of voters.` : ""} everylaw.us`
     : "";
 
   return <div className={styles.page}>
     <RHeader />
     <div className={styles.shell}>
       <main className={styles.main}>
-        <h1 style={{ font: "700 16px Verdana, sans-serif", margin: "6px 4px 2px" }}>your record</h1>
+        <h1 className={styles.pageTitle} style={{ marginBottom: 2 }}>your record</h1>
         <p className={styles.tagline} style={{ margin: "0 4px 10px" }}>saved in this browser only, no account needed.</p>
         {votes === null ? <p style={{ padding: 12 }}>loading…</p> : votes.length === 0 ? <p style={{ padding: 12 }} data-testid="history-empty">You haven’t judged any laws in this browser yet. <Link href="/r">Start on the front page →</Link></p> : <>
-          {hottest && dissentShare(hottest) > 0.5 && <div className={styles.hotTake} data-testid="hottest-take">
-            <b>🔥 your hottest take:</b> you said <b>{hottest.direction}</b> on <Link href={hottest.url}>{hottest.citation}</Link> while {Math.round(dissentShare(hottest) * 100)}% of voters went the other way.
+          {hottest && hottestDissent > 0.5 && <div className={styles.hotTake} data-testid="hottest-take">
+            <b>🔥 your hottest take:</b> you said <b>{hottest.direction}</b> on <Link href={hottest.url}>{hottest.citation}</Link> while {Math.round(hottestDissent * 100)}% of voters went the other way.
           </div>}
           <div data-testid="history-list">
             {votes.map((vote) => {

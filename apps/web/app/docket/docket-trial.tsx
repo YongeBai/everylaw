@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { rPostUrl, agePhrase, officialSourceUrl } from "@/lib/reddit-data";
+import { agePhrase, lawUrl, officialSourceUrl } from "@/lib/reddit-format";
 import { subredditSlug } from "@/lib/title-names";
 import { parseHistory } from "@/lib/history";
 import { highlightTerms } from "@/lib/terms";
@@ -13,7 +13,7 @@ import styles from "@/app/r/reddit.module.css";
 /** Experimental docket design: old-reddit vernacular, distinct from a normal post. */
 export function DocketTrial({ docket }: { docket: Docket }) {
   const { law, summary, explanation, origin, takes, yesterday, todayKey } = docket;
-  const url = rPostUrl(law);
+  const url = lawUrl(law);
   const trialDate = new Date(`${todayKey}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const total = law.keepCount + law.dissolveCount;
   const keepPct = total > 0 ? Math.round((law.keepCount / total) * 100) : 50;
@@ -62,7 +62,7 @@ export function DocketTrial({ docket }: { docket: Docket }) {
       </section>
 
       {yesterday && <section className={styles.trialYesterday} data-testid="docket-yesterday">
-        <b>yesterday’s verdict:</b> <Link href={rPostUrl(yesterday)}>{yesterday.citation} — {yesterday.heading}</Link>
+        <b>yesterday’s verdict:</b> <Link href={lawUrl(yesterday)}>{yesterday.citation} — {yesterday.heading}</Link>
         {yesterday.totalCount > 0
           ? <> · the People said <b data-dissolve={yesterday.dissolveRatio >= 0.5}>{yesterday.dissolveRatio >= 0.5 ? `DISSOLVE (${Math.round(yesterday.dissolveRatio * 100)}%)` : `KEEP (${Math.round((1 - yesterday.dissolveRatio) * 100)}%)`}</b> on {yesterday.totalCount.toLocaleString()} ballots</>
           : <> · still open</>}

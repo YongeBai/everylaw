@@ -18,11 +18,18 @@ export const TERM_DEFINITIONS: TermDef[] = [
   { term: "person", definition: "Under the Dictionary Act, 1 U.S.C. § 1, “person” presumptively includes corporations, companies, associations, firms, partnerships, societies, and joint stock companies as well as individuals." },
 ];
 
+// Compiled once at module load — highlightTerms runs on every law-page render.
+// Deliberately non-global: only the FIRST occurrence of each term is marked, so
+// common words ("person", "whoever") don't turn the statute into confetti.
+const TERM_PATTERNS = TERM_DEFINITIONS.map(({ term }) => ({
+  term,
+  pattern: new RegExp(`(?<![\\w>])${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i"),
+}));
+
 /** Wrap known terms in bodyHtml with a marker element the client can bind. */
 export function highlightTerms(bodyHtml: string): string {
   let html = bodyHtml;
-  for (const { term } of TERM_DEFINITIONS) {
-    const pattern = new RegExp(`(?<![\\w>])${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i");
+  for (const { term, pattern } of TERM_PATTERNS) {
     html = html.replace(pattern, (match) => `<mark class="law-term" data-term="${term}" role="button" tabindex="0">${match}</mark>`);
   }
   return html;

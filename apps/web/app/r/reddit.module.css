@@ -95,6 +95,8 @@
 .commentArrows button:first-child:hover { color: #ff4500; }
 .commentArrows button:last-child:hover { color: #9494ff; }
 .commentMain { min-width: 0; }
+/* nested replies indent via structure, not a depth prop */
+.commentMain > .comment { margin-left: 18px; }
 .commentMeta { margin: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; color: #888; font-size: 10px; }
 .collapse { border: 0; background: none; color: #888; cursor: pointer; font: inherit; padding: 0; }
 .voteTag { font-weight: 700; padding: 0 4px; border-radius: 2px; }
@@ -170,3 +172,7 @@
 .trialMore > summary::before { content: "[+] "; }
 .trialMore[open] > summary::before { content: "[–] "; }
 .trialMore > summary:hover { text-decoration: underline; }
+
+/* Shared page heading + list-row lead cell (rank + arrows) */
+.pageTitle { font: 700 16px Verdana, sans-serif; margin: 4px 4px 8px; }
+.rowLead { display: flex; gap: 6px; align-items: flex-start; }

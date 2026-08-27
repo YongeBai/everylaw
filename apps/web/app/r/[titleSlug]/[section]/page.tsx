@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAiContent, getLaw, getLawNavigation, getTakes, lawUrl } from "@/lib/data";
+import { getAiContent, getLaw, getLawNavigation, getTakes } from "@/lib/data";
 import { viewerVoterHash } from "@/lib/viewer";
 import { parseHistory } from "@/lib/history";
+import { getTodayTrialId } from "@/app/docket/pick";
 import { highlightTerms } from "@/lib/terms";
-import { agePhrase, officialSourceUrl, rPostUrl } from "@/lib/reddit-data";
+import { agePhrase, lawUrl, officialSourceUrl } from "@/lib/reddit-format";
 import { subredditSlug } from "@/lib/title-names";
 import { RHeader } from "@/components/r/header";
 import { VoteArrows } from "@/components/r/vote-arrows";
@@ -26,17 +27,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function RPostPage({ params, searchParams }: Props) {
   const { titleSlug, section } = await params;
   const { trial } = await searchParams;
-  const trialNumber = /^\d+$/.test(trial ?? "") ? Number(trial) : null;
   const law = await getLaw(titleSlug, decodeURIComponent(section));
   if (!law) notFound();
+  // The banner claims "today's trial" — verify against the docket, don't trust the URL.
+  const isTrial = trial !== undefined && (await getTodayTrialId()) === law.id;
   const [content, takes, navigation] = await Promise.all([getAiContent(law.id), viewerVoterHash().then((hash) => getTakes(law.id, hash)), getLawNavigation(law)]);
   const history = parseHistory(law.sourceCredit);
-  const url = rPostUrl(law);
+  const url = lawUrl(law);
   const sourceUrl = officialSourceUrl(law.title, law.num);
 
   return <div className={styles.page}>
     <RHeader activeTitle={titleSlug} />
-    {trialNumber !== null && <div className={styles.trialBanner} data-testid="trial-banner">⚖ today’s trial<span>new law is up for trial at midnight PST</span></div>}
+    {isTrial && <div className={styles.trialBanner} data-testid="trial-banner">⚖ today’s trial<span>new law is up for trial at midnight PST</span></div>}
     <div className={styles.shell}>
       <main className={styles.main}>
         <article className={styles.post}>
@@ -89,9 +91,9 @@ export default async function RPostPage({ params, searchParams }: Props) {
         </div></div>
         <div className={styles.sideBox}><h2>related laws</h2><div className={styles.sideBoxBody}>
           <ul className={styles.related}>
-            {navigation.previous && <li><Link href={rPostUrl(navigation.previous)}>{navigation.previous.citation} — {navigation.previous.heading}</Link></li>}
-            {navigation.next && <li><Link href={rPostUrl(navigation.next)}>{navigation.next.citation} — {navigation.next.heading}</Link></li>}
-            {navigation.related.map((item) => <li key={item.id}><Link href={rPostUrl(item)}>{item.citation} — {item.heading}</Link></li>)}
+            {navigation.previous && <li><Link href={lawUrl(navigation.previous)}>{navigation.previous.citation} — {navigation.previous.heading}</Link></li>}
+            {navigation.next && <li><Link href={lawUrl(navigation.next)}>{navigation.next.citation} — {navigation.next.heading}</Link></li>}
+            {navigation.related.map((item) => <li key={item.id}><Link href={lawUrl(item)}>{item.citation} — {item.heading}</Link></li>)}
           </ul>
         </div></div>
       </aside>

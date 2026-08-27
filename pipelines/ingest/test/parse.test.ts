@@ -18,7 +18,7 @@ describe("USLM streaming parser", () => {
     expect(murder.citation).toBe("18 U.S.C. § 1111");
     expect(murder.bodyText).toContain("unlawful killing");
     expect(murder.bodyText).not.toContain("editorial note");
-    expect(murder.enactingPl).toBe("Pub. L. 103-322");
+    expect(murder.enactingPl).toBe("ch. 645");
     expect(nodes.filter((node) => node.identifier.endsWith("s1111"))).toHaveLength(1);
     expect(nodes.find((node) => node.identifier.endsWith("s1112"))?.status).toBe("repealed");
     expect(nodes.find((node) => node.identifier.endsWith("s1201A"))).toMatchObject({ num: "1201A", status: "transferred" });

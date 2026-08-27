@@ -45,9 +45,9 @@ function CommentForm({ nodeId, parentId, onPosted, onCancel }: { nodeId: number;
   </form>;
 }
 
-function CommentNode({ comment, childrenOf, nodeId, onPosted, onVoted, depth }: {
+function CommentNode({ comment, childrenOf, nodeId, onPosted, onVoted }: {
   comment: RComment; childrenOf: Map<number | null, RComment[]>; nodeId: number;
-  onPosted: (comment: RComment) => void; onVoted: (id: number, up: number, down: number) => void; depth: number;
+  onPosted: (comment: RComment) => void; onVoted: (id: number, up: number, down: number) => void;
 }) {
   const [replying, setReplying] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -60,7 +60,7 @@ function CommentNode({ comment, childrenOf, nodeId, onPosted, onVoted, depth }: 
     if (response.ok) onVoted(comment.id, result.upvoteCount, result.downvoteCount);
   }
 
-  return <div className={styles.comment} data-testid={`comment-${comment.id}`} style={{ marginLeft: depth === 0 ? 0 : 18 }}>
+  return <div className={styles.comment} data-testid={`comment-${comment.id}`}>
     <div className={styles.commentArrows}>
       <button aria-label="upvote comment" data-testid={`cup-${comment.id}`} onClick={() => voteComment(1)}>▲</button>
       <button aria-label="downvote comment" data-testid={`cdown-${comment.id}`} onClick={() => voteComment(-1)}>▼</button>
@@ -80,7 +80,7 @@ function CommentNode({ comment, childrenOf, nodeId, onPosted, onVoted, depth }: 
           <span className={styles.linkQuiet}>permalink</span>
         </p>
         {replying && <CommentForm nodeId={nodeId} parentId={comment.id} onPosted={onPosted} onCancel={() => setReplying(false)} />}
-        {kids.map((kid) => <CommentNode key={kid.id} comment={kid} childrenOf={childrenOf} nodeId={nodeId} onPosted={onPosted} onVoted={onVoted} depth={depth + 1} />)}
+        {kids.map((kid) => <CommentNode key={kid.id} comment={kid} childrenOf={childrenOf} nodeId={nodeId} onPosted={onPosted} onVoted={onVoted} />)}
       </>}
     </div>
   </div>;
@@ -100,7 +100,8 @@ export function Comments({ nodeId, initial }: { nodeId: number; initial: RCommen
     const sorted = [...comments].sort((a, b) => (b.upvoteCount - b.downvoteCount) - (a.upvoteCount - a.downvoteCount) || b.id - a.id);
     for (const comment of sorted) {
       const key = comment.parentId ?? null;
-      map.set(key, [...(map.get(key) ?? []), comment]);
+      const siblings = map.get(key);
+      if (siblings) siblings.push(comment); else map.set(key, [comment]);
     }
     return map;
   }, [comments]);
@@ -112,7 +113,7 @@ export function Comments({ nodeId, initial }: { nodeId: number; initial: RCommen
   return <section className={styles.comments} data-testid="comments">
     <p className={styles.commentsHead}>all {comments.length} case{comments.length === 1 ? "" : "s"} · sorted by: <b>best</b></p>
     <CommentForm nodeId={nodeId} parentId={null} onPosted={onPosted} />
-    {roots.map((comment) => <CommentNode key={comment.id} comment={comment} childrenOf={childrenOf} nodeId={nodeId} onPosted={onPosted} onVoted={onVoted} depth={0} />)}
+    {roots.map((comment) => <CommentNode key={comment.id} comment={comment} childrenOf={childrenOf} nodeId={nodeId} onPosted={onPosted} onVoted={onVoted} />)}
     {roots.length === 0 && <p className={styles.commentsEmpty}>no cases yet — make the first one</p>}
   </section>;
 }

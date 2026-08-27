@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { lawUrl, searchLaws } from "@/lib/data";
 import { agePhrase } from "@/lib/reddit-format";
+import { subredditSlug } from "@/lib/title-names";
 import { RHeader } from "@/components/r/header";
 import { VoteArrows } from "@/components/r/vote-arrows";
 import styles from "@/app/r/reddit.module.css";
@@ -17,14 +18,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     <RHeader />
     <div className={styles.shell}>
       <main className={styles.main}>
-        <h1 style={{ font: "700 16px Verdana, sans-serif", margin: "4px 4px 8px" }} data-testid="search-title">{query ? <>search results for “{query}”</> : "search"}</h1>
+        <h1 className={styles.pageTitle} data-testid="search-title">{query ? <>search results for “{query}”</> : "search"}</h1>
         {!query && <p style={{ padding: "4px", color: "#888" }}>Type a citation, a phrase, or a headline into the search box above.</p>}
         {query && results.length === 0 && <p style={{ padding: "4px", color: "#888" }} data-testid="search-empty">No matching section yet. Try a shorter phrase or citation.</p>}
         {results.length > 0 && <div data-testid="search-results">
           {results.map((law, index) => {
             const url = lawUrl(law);
             return <article className={styles.thing} key={law.id} data-testid={`result-${law.id}`}>
-              <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+              <div className={styles.rowLead}>
                 <span className={styles.rank}>{index + 1}</span>
                 <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} />
               </div>
@@ -34,7 +35,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                   <Link href={url}>{law.citation} — {law.heading}</Link>
                   {law.status !== "active" && <span className={styles.postFlair}>{law.status}</span>}
                 </p>
-                <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={`/r/title-${law.title}`}>r/title-{law.title}</Link> · {law.keepCount} keep · {law.dissolveCount} dissolve</p>
+                <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={`/r/${subredditSlug(law.title)}`}>r/{subredditSlug(law.title)}</Link> · {law.keepCount} keep · {law.dissolveCount} dissolve</p>
                 <p className={styles.buttons}><Link href={url}>read the law</Link></p>
               </div>
             </article>;

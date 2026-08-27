@@ -118,14 +118,18 @@ export function parseSourceCredit(credit: string | null): SourceCreditInfo {
   if (!credit) return { enactingPl: null, enactedDate: null, amendmentCount: 0 };
   const normalized = credit.replace(/[–—]/g, '-');
   const plMatches = normalized.match(/Pub\.\s*L\.\s*\d+-\d+/g) ?? [];
-  let enactingPl: string | null = plMatches[0]?.replace(/\s+/g, ' ') ?? null;
-  if (!enactingPl) {
-    // Pre-1957 acts are cited as chapter laws: "June 25, 1948, ch. 645, 62 Stat. 683".
-    const ch = normalized.match(/ch\.\s*\d+/);
-    if (ch) enactingPl = ch[0].replace(/\s+/g, ' ');
-  }
+  // The credit lists the ENACTING citation first ("(June 25, 1948, ch. 645, …;
+  // Pub. L. 98-473, …)"), so the enacting act and date come from the first
+  // segment — a later Pub. L. is an amendment, not the origin.
+  const firstSegment = normalized.replace(/^\(/, '').split(';')[0];
+  let enactingPl: string | null =
+    firstSegment.match(/Pub\.\s*L\.\s*\d+-\d+/)?.[0]?.replace(/\s+/g, ' ') ??
+    firstSegment.match(/ch\.\s*\d+/)?.[0]?.replace(/\s+/g, ' ') ??
+    plMatches[0]?.replace(/\s+/g, ' ') ?? null;
   let enactedDate: string | null = null;
-  const dm = normalized.match(
+  const dm = firstSegment.match(
+    /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z.]*\s+(\d{1,2}),\s+(\d{4})/i,
+  ) ?? normalized.match(
     /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z.]*\s+(\d{1,2}),\s+(\d{4})/i,
   );
   if (dm) {

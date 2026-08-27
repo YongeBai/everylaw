@@ -3,13 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { subredditSlug, titleNumberFromSlug } from "@/lib/title-names";
+import { subredditSlug, titleNumberFromSlug, TOPBAR_TITLES } from "@/lib/title-names";
 import styles from "@/app/r/reddit.module.css";
 
 type Suggestion = { citation: string; heading: string; url: string };
-const TOPBAR = [
-  [18, "crimes"], [21, "food&drugs"], [26, "taxes"], [47, "telecom"], [15, "commerce"], [42, "health"], [16, "conservation"], [49, "transportation"], [7, "agriculture"], [38, "veterans"],
-] as const;
 
 export function RHeader({ activeTitle }: { activeTitle?: string }) {
   const router = useRouter();
@@ -29,7 +26,7 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
   return <>
     <div className={styles.topbar}>
       <Link href="/" className={styles.topbarHome}>ALL</Link>
-      {TOPBAR.map(([num, label]) => <Link key={num} data-active={(activeTitle && titleNumberFromSlug(activeTitle) === num) || undefined} href={`/r/${subredditSlug(num)}`}>{label}</Link>)}
+      {TOPBAR_TITLES.map(([num, label]) => <Link key={num} data-active={(activeTitle && titleNumberFromSlug(activeTitle) === num) || undefined} href={`/r/${subredditSlug(num)}`}>{label}</Link>)}
       <Link href="/r" className={styles.topbarMore}>browse all titles »</Link>
     </div>
     <header className={styles.header}>

@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("the front page of the U.S. Code lives at root with sort tabs", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("post-list")).toBeVisible();
-  for (const sort of ["hot", "top", "controversial", "dissolved", "kept"]) {
+  for (const sort of ["hot", "top", "controversial", "dissolved", "kept", "order"]) {
     await expect(page.getByTestId(`sort-${sort}`)).toBeVisible();
   }
   await page.getByTestId("sort-dissolved").click();
@@ -14,7 +14,7 @@ test("the front page of the U.S. Code lives at root with sort tabs", async ({ pa
 test("/r lists every title as a subreddit", async ({ page }) => {
   await page.goto("/r");
   await expect(page.getByTestId("title-list")).toBeVisible();
-  await page.getByRole("link", { name: /r\/title-18 — Crimes/i }).click();
+  await page.getByRole("link", { name: /title-18-CRIMES-AND-CRIMINAL-PROCEDURE/ }).click();
   await expect(page.getByTestId("subreddit-title")).toContainText(/crimes and criminal procedure/i);
 });
 
@@ -25,6 +25,8 @@ test("subreddits scope a title with sidebar info and related laws on posts", asy
   await expect(page.getByTestId("subreddit-title")).toContainText("r/title-18-CRIMES-AND-CRIMINAL-PROCEDURE");
   await expect(page.getByTestId("subreddit-title")).toContainText(/crimes and criminal procedure/i);
   await expect(page.getByText("moderator")).toBeVisible();
+  await page.goto("/r/title-18?sort=order");
+  await expect(page.getByTestId("post-list").locator("article").first()).toContainText("18 U.S.C. § 1 —");
   await page.goto("/r/title-18/1111");
   await expect(page.getByTestId("related-laws")).toBeVisible();
   await expect(page.getByTestId("related-laws").getByRole("link").first()).toBeVisible();

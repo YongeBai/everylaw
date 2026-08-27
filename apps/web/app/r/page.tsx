@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTitles } from "@/lib/data";
+import { subredditSlug } from "@/lib/title-names";
 import { RHeader } from "@/components/r/header";
 import styles from "./reddit.module.css";
 
@@ -12,13 +13,13 @@ export default async function AllTitles() {
     <RHeader />
     <div className={styles.shell}>
       <main className={styles.main}>
-        <h1 style={{ font: "700 16px Verdana, sans-serif", margin: "4px 4px 8px" }} data-testid="all-titles">all subreddits — the titles of the U.S. Code</h1>
+        <h1 className={styles.pageTitle} data-testid="all-titles">all subreddits — the titles of the U.S. Code</h1>
         <div data-testid="title-list">
           {titles.map((title, index) => <article className={styles.thing} key={title.id}>
-            <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}><span className={styles.rank}>{index + 1}</span></div>
+            <div className={styles.rowLead}><span className={styles.rank}>{index + 1}</span></div>
             <span className={styles.thumb} aria-hidden>§</span>
             <div className={styles.entry}>
-              <p className={styles.postTitle}><Link href={`/r/title-${title.num}`}>r/title-{title.num} — {title.heading}</Link></p>
+              <p className={styles.postTitle}><Link href={`/r/${subredditSlug(Number(title.num))}`}>r/{subredditSlug(Number(title.num))}</Link></p>
               <p className={styles.tagline}>{title.sectionCount.toLocaleString()} sections · moderated by Congress (inactive)</p>
             </div>
           </article>)}
