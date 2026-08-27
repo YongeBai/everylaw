@@ -1,0 +1,27 @@
+{
+  "name": "everylaw",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "pipelines/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/web",
+    "db:generate": "npm run generate -w packages/db",
+    "db:migrate": "npm run migrate -w packages/db",
+    "db:seed": "npm run seed -w packages/db",
+    "lint": "npm run lint -w apps/web",
+    "ingest": "npm run ingest -w pipelines/ingest --",
+    "typecheck": "tsc -b packages/db pipelines/ingest pipelines/ai && npm run typecheck -w apps/web",
+    "test": "npm run test -w apps/web && npm run test -w pipelines/ingest && npm run test -w pipelines/ai",
+    "test:e2e": "playwright test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}

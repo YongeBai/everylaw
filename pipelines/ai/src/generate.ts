@@ -1,0 +1,56 @@
+import "dotenv/config";
+import { readFile } from "node:fs/promises";
+import { Command } from "commander";
+import { sql } from "drizzle-orm";
+import { db, sqlClient } from "@everylaw/db";
+import { deterministicContent, lintContent, type ContentType, type LawInput } from "./content.js";
+
+const options = new Command()
+  .option("--tier <number>", "featured tier", "2")
+  .option("--limit <number>", "law limit", "1000")
+  .option("--provider <provider>", "local or anthropic", "local")
+  .option("--type <type>", "generate only summary, explanation, origin, or facts")
+  .option("--publish", "publish instead of creating drafts")
+  .parse().opts<{ tier: string; limit: string; provider: "local"|"anthropic"; type?: string; publish?: boolean }>();
+const validTypes: ContentType[] = ["summary", "explanation", "origin", "facts"];
+// v2: explanation is a structured plain-English translation; origin may use
+// well-established history of the enacting act, clearly hedged.
+const promptVersions: Record<ContentType, string> = { summary: "v1", explanation: "v2", origin: "v2", facts: "v1" };
+if (options.type && !validTypes.includes(options.type as ContentType)) throw new Error(`Invalid content type: ${options.type}`);
+const types: ContentType[] = options.type ? [options.type as ContentType] : Number(options.tier) >= 2 ? validTypes : ["summary"];
+const rows = await db.execute(sql`SELECT id, citation, heading, body_text, source_credit, enacting_pl, enacted_date, word_count, amendment_count FROM law_nodes WHERE node_type='section' AND featured_tier >= ${Number(options.tier)} ORDER BY sort_key LIMIT ${Number(options.limit)}`);
+
+type Generated = { body: string; model: string; input: number; output: number; truncated?: boolean };
+
+async function anthropicGenerate(type: ContentType, law: LawInput): Promise<Generated> {
+  const apiKey = process.env.ANTHROPIC_API_KEY; const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is required for --provider anthropic");
+  const { default: Anthropic } = await import("@anthropic-ai/sdk"); const client = new Anthropic({ apiKey });
+  const instruction = await readFile(new URL(`../prompts/${type}.${promptVersions[type]}.md`, import.meta.url), "utf8");
+  // Current Claude models may spend part of max_tokens on internal processing.
+  // Content lint below remains the user-visible length guard.
+  const maxTokens: Record<ContentType, number> = { summary: 180, explanation: 900, origin: 1200, facts: 500 };
+  const message = await client.messages.create({ model, max_tokens: maxTokens[type], system: instruction, messages: [{ role: "user", content: JSON.stringify(law) }] });
+  const body = message.content.filter((block) => block.type === "text").map((block) => block.text).join("\n");
+  return { body, model, input: message.usage.input_tokens, output: message.usage.output_tokens, truncated: message.stop_reason === "max_tokens" };
+}
+
+let created = 0;
+let skipped = 0;
+let inputTokens = 0;
+let outputTokens = 0;
+for (const row of rows) {
+  const law: LawInput = { citation: String(row.citation), heading: String(row.heading), bodyText: String(row.body_text), sourceCredit: row.source_credit ? String(row.source_credit) : null, enactingPl: row.enacting_pl ? String(row.enacting_pl) : null, enactedDate: row.enacted_date ? String(row.enacted_date) : null, wordCount: Number(row.word_count), amendmentCount: Number(row.amendment_count) };
+  for (const type of types) {
+    const generated: Generated = options.provider === "anthropic" ? await anthropicGenerate(type, law) : { body: deterministicContent(type, law), model: "local-deterministic", input: 0, output: 0 };
+    inputTokens += generated.input;
+    outputTokens += generated.output;
+    const errors = lintContent(type, generated.body);
+    if (generated.truncated) errors.push("output reached the token limit");
+    if (errors.length) { skipped += 1; console.warn(`${law.citation} ${type}: ${errors.join(", ")}`); continue; }
+    await db.execute(sql`INSERT INTO ai_contents(node_id, content_type, body_md, model, prompt_version, input_tokens, output_tokens, status) VALUES (${Number(row.id)}, ${type}::ai_content_type, ${generated.body}, ${generated.model}, ${`${type}.${promptVersions[type]}`}, ${generated.input}, ${generated.output}, ${options.publish ? sql`'published'::content_status` : sql`'draft'::content_status`})`);
+    created += 1;
+  }
+}
+console.log(JSON.stringify({ provider: options.provider, laws: rows.length, attempted: rows.length * types.length, created, skipped, inputTokens, outputTokens }, null, 2));
+await sqlClient.end();

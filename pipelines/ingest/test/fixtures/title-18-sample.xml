@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uscDoc xmlns="http://xml.house.gov/schemas/uslm/1.0">
+  <title identifier="/us/usc/t18">
+    <num value="18">Title 18</num><heading>Crimes and Criminal Procedure</heading>
+    <chapter identifier="/us/usc/t18/ch51">
+      <num value="51">CHAPTER 51</num><heading>HOMICIDE</heading>
+      <section identifier="/us/usc/t18/s1111">
+        <num value="1111">§ 1111.</num><heading>Murder</heading>
+        <subsection identifier="/us/usc/t18/s1111/a"><num>(a)</num><content>Murder is the unlawful killing of a human being with malice aforethought.</content></subsection>
+        <sourceCredit>(June 25, 1948, ch. 645, 62 Stat. 756; Pub. L. 103–322, Sept. 13, 1994.)</sourceCredit>
+        <notes><note>This editorial note should not be indexed.<section identifier="/us/usc/t18/s1111"><num value="1111">1111</num><heading>Quoted duplicate</heading><content>Not current statutory text.</content></section></note></notes>
+      </section>
+      <section identifier="/us/usc/t18/s1112">
+        <num>§ 1112.</num><heading>Repealed</heading><sourceCredit>Pub. L. 100-1, Jan. 1, 1987.</sourceCredit>
+      </section>
+      <section status="renumbered" identifier="/us/usc/t18/s1201A"><num value="1201A">[§ 1201A.</num><heading>Renumbered § 1202</heading></section>
+      <section identifier="/us/usc/t18/s130g"><num value="130g">§ 130g.</num><heading>First duplicate-numbered law</heading><content>First current provision.</content></section>
+      <section identifier="/us/usc/t18/s130g"><num value="130g">§ 130g.</num><heading>Second duplicate-numbered law</heading><content>Second current provision.</content></section>
+    </chapter>
+    <chapter status="repealed" identifier="/us/usc/t18/ch119">
+      <num value="119">[CHAPTER 119</num><heading>Repealed]</heading>
+    </chapter>
+    <chapter identifier="/us/usc/t18/ch119">
+      <num value="119">CHAPTER 119</num><heading>Recreated chapter reusing an identifier</heading>
+      <section identifier="/us/usc/t18/s2510"><num value="2510">§ 2510.</num><heading>Definitions</heading><content>Terms used in this chapter are defined here.</content></section>
+    </chapter>
+  </title>
+</uscDoc>

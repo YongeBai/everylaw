@@ -1,0 +1,1 @@
+Give exactly 3–5 short factual Markdown bullets grounded only in the supplied statute and metadata. Return only the bullets. Useful facts include placement in the Code, length, enacting law, date, and number of source-credit references. Do not repeat the explanation.
