@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "@everylaw/db";
+import { rPostUrlFrom } from "@/lib/reddit-format";
 
 /** Deal a batch of random in-force sections for the infinite review feed. */
 export async function GET(request: NextRequest) {
@@ -24,10 +25,9 @@ export async function GET(request: NextRequest) {
     `);
     const laws = rows.map((row) => {
       const title = Number(String(row.identifier).match(/\/t(\d+)/)?.[1] ?? 0);
-      const suffix = String(row.identifier).match(/(~\d+)$/)?.[1] ?? "";
       return {
         id: Number(row.id), citation: String(row.citation), heading: String(row.heading), title,
-        url: `/r/title-${title}/${encodeURIComponent(`${row.num}${suffix}`)}`,
+        url: rPostUrlFrom(title, String(row.num), String(row.identifier)),
         wordCount: Number(row.word_count), enactedDate: row.enacted_date ? String(row.enacted_date) : null,
         enactingPl: row.enacting_pl ? String(row.enacting_pl) : null,
         keepCount: Number(row.keep_count), dissolveCount: Number(row.dissolve_count),

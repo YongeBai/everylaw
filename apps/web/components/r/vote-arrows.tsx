@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { readLocalVotes, recordLocalVote } from "@/lib/local-history";
+import { emitPostVote } from "@/lib/vote-sync";
 import styles from "@/app/r/reddit.module.css";
 
 type Props = {
@@ -27,6 +28,7 @@ export function VoteArrows({ nodeId, citation, heading, url, keepCount, dissolve
     if (!response.ok) { setError(result.error || "Vote failed"); return; }
     setCounts({ keep: result.keepCount, dissolve: result.dissolveCount });
     setMine(direction);
+    emitPostVote(nodeId, direction === "keep" ? "up" : "down");
     recordLocalVote({ id: nodeId, citation, heading, url, direction, keepCount: result.keepCount, dissolveCount: result.dissolveCount, ts: Date.now() });
   }
 

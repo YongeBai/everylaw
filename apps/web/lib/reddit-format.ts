@@ -1,8 +1,10 @@
 /** Pure formatting helpers shared by server and client — no DB imports here. */
 
+import { subredditSlug } from "@/lib/title-names";
+
 export function rPostUrlFrom(title: number, num: string, identifier: string): string {
   const suffix = identifier.match(/(~\d+)$/)?.[1] ?? "";
-  return `/r/title-${title}/${encodeURIComponent(`${num}${suffix}`)}`;
+  return `/r/${subredditSlug(title)}/${encodeURIComponent(`${num}${suffix}`)}`;
 }
 
 export function officialSourceUrl(title: number, num: string): string {

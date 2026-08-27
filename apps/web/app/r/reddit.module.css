@@ -85,10 +85,6 @@
 .comments { margin-top: 16px; }
 .commentsHead { border-bottom: 1px solid #e0e0e0; padding-bottom: 6px; color: #555; font-size: 11px; }
 .commentForm { margin: 10px 0; max-width: 560px; }
-.stancePick { display: flex; gap: 6px; margin-bottom: 4px; }
-.stancePick button { border: 1px solid #ccc; background: #f6f7f8; font: 700 10px Verdana, sans-serif; padding: 3px 8px; cursor: pointer; color: #555; }
-.stancePick button[data-stance="keep"][aria-pressed="true"] { background: #ffede4; border-color: #ff4500; color: #c03500; }
-.stancePick button[data-stance="dissolve"][aria-pressed="true"] { background: #ececff; border-color: #9494ff; color: #4f4fd8; }
 .commentForm textarea { width: 100%; min-height: 64px; border: 1px solid #ccc; padding: 6px 8px; font: 12px Verdana, sans-serif; resize: vertical; }
 .formRow { display: flex; align-items: center; gap: 10px; margin-top: 3px; font-size: 10px; color: #888; }
 .saveButton { border: 1px solid #ccc; background: #f6f7f8; font: 700 11px Verdana, sans-serif; padding: 3px 14px; cursor: pointer; }
@@ -101,9 +97,9 @@
 .commentMain { min-width: 0; }
 .commentMeta { margin: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; color: #888; font-size: 10px; }
 .collapse { border: 0; background: none; color: #888; cursor: pointer; font: inherit; padding: 0; }
-.stanceTag { font-weight: 700; padding: 0 4px; border-radius: 2px; }
-.stanceTag[data-stance="keep"] { background: #ffede4; color: #c03500; }
-.stanceTag[data-stance="dissolve"] { background: #ececff; color: #4f4fd8; }
+.voteTag { font-weight: 700; padding: 0 4px; border-radius: 2px; }
+.voteTag[data-vote="up"] { background: #ffede4; color: #c03500; }
+.voteTag[data-vote="down"] { background: #ececff; color: #4f4fd8; }
 .commentBody { margin: 3px 0; font-size: 13px; line-height: 1.55; }
 .commentActions { margin: 0; display: flex; gap: 10px; font-size: 10px; }
 .linkButton { border: 0; background: none; color: #888; font: 700 10px Verdana, sans-serif; cursor: pointer; padding: 0; }

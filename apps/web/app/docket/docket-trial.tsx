@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { rPostUrl, agePhrase, officialSourceUrl } from "@/lib/reddit-data";
+import { subredditSlug } from "@/lib/title-names";
 import { parseHistory } from "@/lib/history";
 import { highlightTerms } from "@/lib/terms";
 import { RHeader } from "@/components/r/header";
@@ -24,7 +25,7 @@ export function DocketTrial({ docket }: { docket: Docket }) {
       <section className={styles.trialBox} data-testid="docket-trial">
         <div className={styles.trialSticky}>⚖ {trialDate} trial<span className={styles.trialStickyRight}>new law is up for trial at midnight PST</span></div>
         <div className={styles.trialInner}>
-          <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={`/r/title-${law.title}`}>r/title-{law.title}</Link></p>
+          <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={`/r/${subredditSlug(law.title)}`}>r/{subredditSlug(law.title)}</Link></p>
           <h1 className={styles.trialTitle}><Link href={url}>{law.citation} — {law.heading}</Link></h1>
           {summary
             ? <p className={styles.trialSummary}>{summary}</p>

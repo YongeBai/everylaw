@@ -6,8 +6,9 @@ describe("database schema", () => {
     expect(votes.voterHash).toBeDefined();
     expect(votes.userId).toBeDefined();
   });
-  it("models law hierarchy and structured takes", () => {
+  it("models law hierarchy and voter-linked takes", () => {
     expect(lawNodes.parentId).toBeDefined();
-    expect(takes.stance).toBeDefined();
+    expect(takes.voterHash).toBeDefined();
+    expect((takes as unknown as Record<string, unknown>).stance).toBeUndefined();
   });
 });
