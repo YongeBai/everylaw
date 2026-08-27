@@ -33,7 +33,7 @@ test("subreddits scope a title with sidebar info and related laws on posts", asy
 test("a law post carries official text with term definitions, translation, and history", async ({ page }) => {
   await page.goto("/r/title-18/1111");
   const canonical = page.locator('link[rel="canonical"]');
-  await expect(canonical).toHaveAttribute("href", /\/r\/title-18\/1111$/);
+  await expect(canonical).toHaveAttribute("href", /\/r\/title-18-CRIMES-AND-CRIMINAL-PROCEDURE\/1111$/);
   await expect(page.getByTestId("post-official")).toContainText("uscode.house.gov");
   await expect(page.getByTestId("post-official")).toContainText("malice aforethought");
   await page.getByTestId("official-text").locator("mark.law-term").first().click();

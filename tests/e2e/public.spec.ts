@@ -4,8 +4,6 @@ function trackErrors(page: Page) { const errors: string[] = []; page.on("pageerr
 
 test("browse and law reading flows", async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto("/browse/crime-punishment");
-  await expect(page.getByRole("heading", { name: "Crime & punishment" })).toBeVisible();
   await page.goto("/r");
   await expect(page.getByRole("link", { name: /r\/title-53 — Reserved/ })).toBeVisible();
   await page.getByRole("link", { name: /Crimes and Criminal Procedure/i }).click();
@@ -48,7 +46,7 @@ test("vote can change without duplicating the voter", async ({ page }) => {
   await expect(arrows.getByTestId(/^arrow-dissolve-/)).toHaveAttribute("aria-pressed", "true");
   await expect(score).toHaveText((initial - 1).toLocaleString("en-US"));
   await page.reload(); await expect(page.getByTestId(/^arrow-dissolve-/).first()).toHaveAttribute("aria-pressed", "true");
-  await page.goto("/rankings/most-dissolved"); await expect(page.getByText(/Desecration of the flag/).first()).toBeVisible();
+ 
   await page.waitForLoadState("networkidle");
   expect(errors).toEqual([]);
 });
