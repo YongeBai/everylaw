@@ -14,14 +14,13 @@ type RandomLaw = {
 };
 
 function QuickTake({ nodeId }: { nodeId: number }) {
-  const [stance, setStance] = useState<"keep" | "dissolve">("keep");
   const [body, setBody] = useState("");
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setMessage("");
-    const response = await fetch("/api/takes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, stance, body, website: "" }) });
+    const response = await fetch("/api/takes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, body, website: "" }) });
     const result = await response.json();
     if (response.ok) { setBody(""); setMessage("your case is live on the law's page"); }
     else setMessage(result.error || "could not post");
@@ -29,11 +28,7 @@ function QuickTake({ nodeId }: { nodeId: number }) {
 
   if (!open) return <p className={styles.buttons} style={{ marginTop: 6 }}><button className={styles.linkButton} data-testid={`quicktake-open-${nodeId}`} onClick={() => setOpen(true)}>give your take</button></p>;
   return <form className={styles.commentForm} onSubmit={submit} style={{ marginBottom: 0 }}>
-    <div className={styles.stancePick}>
-      <button type="button" data-stance="keep" aria-pressed={stance === "keep"} onClick={() => setStance("keep")}>keep because…</button>
-      <button type="button" data-stance="dissolve" aria-pressed={stance === "dissolve"} onClick={() => setStance("dissolve")}>dissolve because…</button>
-    </div>
-    <textarea data-testid={`quicktake-body-${nodeId}`} required minLength={3} maxLength={280} value={body} onChange={(event) => setBody(event.target.value)} placeholder="one claim, 280 characters" />
+    <textarea data-testid={`quicktake-body-${nodeId}`} required minLength={3} maxLength={280} value={body} onChange={(event) => setBody(event.target.value)} placeholder="one claim, 280 characters (carries your vote)" />
     <div className={styles.formRow}><span>{body.length}/280</span><button data-testid={`quicktake-save-${nodeId}`} className={styles.saveButton}>save</button></div>
     {message && <p role="status" className={styles.formError} style={{ color: "#c03500" }}>{message}</p>}
   </form>;

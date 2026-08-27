@@ -44,7 +44,6 @@ test("vote can change without duplicating the voter", async ({ page }) => {
 test("structured take creation and idempotent upvote", async ({ page }) => {
   const errors = trackErrors(page); await page.goto("/us/title-21/347");
   const marker = `E2E intrastate case ${Date.now()}`;
-  await page.getByRole("button", { name: "Dissolve because…" }).click();
   await page.getByTestId("take-body").fill(`${marker}: the rule reaches purely intrastate sales without a useful modern justification.`);
   await page.getByTestId("submit-take").click(); await expect(page.getByText("Your case is live.")).toBeVisible();
   const take = page.getByTestId("take").filter({ hasText: marker }); await expect(take).toBeVisible();

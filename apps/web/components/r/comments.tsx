@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import styles from "@/app/r/reddit.module.css";
 
-export type RComment = { id: number; stance: "keep" | "dissolve"; body: string; upvoteCount: number; downvoteCount: number; parentId: number | null; createdAt: string };
+export type RComment = { id: number; stance: "keep" | "dissolve" | null; body: string; upvoteCount: number; downvoteCount: number; parentId: number | null; createdAt: string };
 
 function ago(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -17,24 +17,19 @@ function ago(iso: string): string {
 }
 
 function CommentForm({ nodeId, parentId, onPosted, onCancel }: { nodeId: number; parentId: number | null; onPosted: (comment: RComment) => void; onCancel?: () => void }) {
-  const [stance, setStance] = useState<"keep" | "dissolve">("keep");
   const [body, setBody] = useState("");
   const [message, setMessage] = useState("");
 
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setMessage("");
-    const response = await fetch("/api/takes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, stance, body, website: "", parentId: parentId ?? undefined }) });
+    const response = await fetch("/api/takes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, body, website: "", parentId: parentId ?? undefined }) });
     const result = await response.json();
     if (response.ok) { onPosted(result.take as RComment); setBody(""); setMessage(""); onCancel?.(); }
     else setMessage(result.error || "Could not post");
   }
 
   return <form className={styles.commentForm} onSubmit={submit} data-testid={parentId ? `reply-form-${parentId}` : "comment-form"}>
-    <div className={styles.stancePick}>
-      <button type="button" data-stance="keep" aria-pressed={stance === "keep"} onClick={() => setStance("keep")}>keep because…</button>
-      <button type="button" data-stance="dissolve" aria-pressed={stance === "dissolve"} onClick={() => setStance("dissolve")}>dissolve because…</button>
-    </div>
-    <textarea data-testid={parentId ? `reply-body-${parentId}` : "comment-body"} required minLength={3} maxLength={280} value={body} onChange={(event) => setBody(event.target.value)} placeholder="one claim, 280 characters — markdown-style *emphasis* welcome" />
+    <textarea data-testid={parentId ? `reply-body-${parentId}` : "comment-body"} required minLength={3} maxLength={280} value={body} onChange={(event) => setBody(event.target.value)} placeholder="one claim, 280 characters (your comment carries your current vote)" />
     <div className={styles.formRow}>
       <span>{body.length}/280</span>
       {onCancel && <button type="button" className={styles.linkButton} onClick={onCancel}>cancel</button>}
@@ -67,7 +62,7 @@ function CommentNode({ comment, childrenOf, nodeId, onPosted, onVoted, depth }: 
     <div className={styles.commentMain}>
       <p className={styles.commentMeta}>
         <button className={styles.collapse} onClick={() => setCollapsed((now) => !now)}>[{collapsed ? "+" : "–"}]</button>
-        <span data-stance={comment.stance} className={styles.stanceTag}>{comment.stance.toUpperCase()}</span>
+        {comment.stance && <span data-stance={comment.stance} className={styles.stanceTag}>{comment.stance.toUpperCase()}</span>}
         <b data-testid={`cscore-${comment.id}`}>{score} point{Math.abs(score) === 1 ? "" : "s"}</b>
         <span>({comment.upvoteCount}|{comment.downvoteCount})</span>
         <span>{ago(comment.createdAt)}</span>

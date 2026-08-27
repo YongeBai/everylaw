@@ -82,8 +82,14 @@ export async function getAiContent(nodeId: number) {
 }
 
 export async function getTakes(nodeId: number) {
-  const rows = await db.execute(sql`SELECT id, stance, body, upvote_count, downvote_count, parent_id, created_at FROM takes WHERE node_id=${nodeId} AND moderation_status='published' ORDER BY stance, upvote_count DESC, created_at DESC`);
-  return rows.map((row) => ({ id: Number(row.id), stance: String(row.stance) as "keep"|"dissolve", body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count ?? 0), parentId: row.parent_id === null || row.parent_id === undefined ? null : Number(row.parent_id), createdAt: String(row.created_at) }));
+  // takes.stance was removed (0007, worktree remove-keep-dissolve): a comment's
+  // stance is its author's CURRENT vote on the law, joined by voter_hash.
+  const rows = await db.execute(sql`
+    SELECT t.id, t.body, t.upvote_count, t.downvote_count, t.parent_id, t.created_at, v.direction AS stance
+    FROM takes t LEFT JOIN votes v ON v.node_id = t.node_id AND v.voter_hash = t.voter_hash
+    WHERE t.node_id=${nodeId} AND t.moderation_status='published'
+    ORDER BY t.upvote_count DESC, t.created_at DESC`);
+  return rows.map((row) => ({ id: Number(row.id), stance: row.stance ? (String(row.stance) as "keep"|"dissolve") : null, body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count ?? 0), parentId: row.parent_id === null || row.parent_id === undefined ? null : Number(row.parent_id), createdAt: String(row.created_at) }));
 }
 
 export async function getRankings(kind: string, limit = 50): Promise<LawSummary[]> {

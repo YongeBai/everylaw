@@ -48,7 +48,6 @@ test("voting from arrows records to browser history with dissent framing", async
 test("comments support stance cases, replies, and up/down votes", async ({ page }) => {
   await page.goto("/r/title-21/347");
   const stamp = Date.now();
-  await page.getByTestId("comment-form").getByRole("button", { name: "dissolve because…" }).click();
   await page.getByTestId("comment-body").fill(`Pat-shape rules are settled lobby residue ${stamp}`);
   await page.getByTestId("comment-save").click();
   const comment = page.getByTestId(/^comment-\d+$/).filter({ hasText: String(stamp) }).first();
@@ -61,7 +60,6 @@ test("comments support stance cases, replies, and up/down votes", async ({ page 
   await expect(page.getByTestId(`cscore-${id}`)).toContainText("-1 point");
 
   await page.getByTestId(`creply-${id}`).click();
-  await page.getByTestId(`reply-form-${id}`).getByRole("button", { name: "keep because…" }).click();
   await page.getByTestId(`reply-body-${id}`).fill(`Disclosure still catches substitution ${stamp}`);
   await page.getByTestId(`reply-save-${id}`).click();
   await expect(page.getByTestId(/^comment-\d+$/).filter({ hasText: `Disclosure still catches substitution ${stamp}` }).first()).toBeVisible();
