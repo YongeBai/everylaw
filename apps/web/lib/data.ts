@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@everylaw/db";
-import { rPostUrlFrom } from "@/lib/reddit-format";
+import { rPostUrlFrom } from "./reddit-format";
 
 export type LawSummary = {
   id: number; identifier: string; citation: string; num: string; heading: string;

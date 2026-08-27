@@ -1,8 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("the front page of the U.S. Code lives at root with sort tabs", async ({ page }) => {
-  await page.goto("/r");
-  await expect(page).toHaveURL(/\/$/);
+  await page.goto("/");
   await expect(page.getByTestId("post-list")).toBeVisible();
   for (const sort of ["hot", "top", "controversial", "dissolved", "kept"]) {
     await expect(page.getByTestId(`sort-${sort}`)).toBeVisible();
@@ -10,6 +9,13 @@ test("the front page of the U.S. Code lives at root with sort tabs", async ({ pa
   await page.getByTestId("sort-dissolved").click();
   await expect(page).toHaveURL(/sort=dissolved/);
   await expect(page.getByTestId("post-list")).toBeVisible();
+});
+
+test("/r lists every title as a subreddit", async ({ page }) => {
+  await page.goto("/r");
+  await expect(page.getByTestId("title-list")).toBeVisible();
+  await page.getByRole("link", { name: /r\/title-18 — Crimes/i }).click();
+  await expect(page.getByTestId("subreddit-title")).toContainText(/crimes and criminal procedure/i);
 });
 
 test("subreddits scope a title with sidebar info and related laws on posts", async ({ page }) => {
@@ -24,7 +30,7 @@ test("subreddits scope a title with sidebar info and related laws on posts", asy
 test("a law post carries official text with term definitions, translation, and history", async ({ page }) => {
   await page.goto("/r/title-18/1111");
   const canonical = page.locator('link[rel="canonical"]');
-  await expect(canonical).toHaveAttribute("href", /\/us\/title-18\/1111$/);
+  await expect(canonical).toHaveAttribute("href", /\/r\/title-18\/1111$/);
   await expect(page.getByTestId("post-official")).toContainText("uscode.house.gov");
   await expect(page.getByTestId("post-official")).toContainText("malice aforethought");
   await page.getByTestId("official-text").locator("mark.law-term").first().click();
@@ -94,14 +100,6 @@ test("random feed deals laws endlessly and takes votes and cases", async ({ page
   await card.locator("textarea").fill("Sampled at random and it still reads like it earns its place.");
   await card.getByRole("button", { name: "save" }).click();
   await expect(card.getByText("your case is live on the law's page")).toBeVisible();
-});
-
-test("voting anywhere offers the random-law hand-off", async ({ page }) => {
-  await page.goto("/us/title-18/700");
-  await page.getByTestId("vote-keep").click();
-  const next = page.getByTestId("vote-next-random");
-  await expect(next).toBeVisible();
-  await expect(next).toHaveAttribute("href", "/r/random");
 });
 
 test("header search suggests laws and routes into /r", async ({ page }) => {

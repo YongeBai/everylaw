@@ -25,7 +25,7 @@ test("a real card links back to the statute; streak resets on a miss", async ({ 
     const wrong = await page.getByTestId("rf-wrong").isVisible().catch(() => false);
     if (wrong) {
       await expect(page.getByTestId("rf-streak")).toContainText("Streak: 0");
-      await expect(page.getByRole("link", { name: /Read it/ })).toHaveAttribute("href", /\/us\/title-/);
+      await expect(page.getByRole("link", { name: /Read it/ })).toHaveAttribute("href", /\/r\/title-/);
       return;
     }
     await page.getByTestId("rf-next").click();
