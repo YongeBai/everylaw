@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { subredditSlug, titleNumberFromSlug } from "@/lib/title-names";
 import styles from "@/app/r/reddit.module.css";
 
 type Suggestion = { citation: string; heading: string; url: string };
 const TOPBAR = [
-  ["title-18", "crimes"], ["title-21", "food&drugs"], ["title-26", "taxes"], ["title-47", "telecom"], ["title-15", "commerce"], ["title-42", "health"], ["title-16", "conservation"], ["title-49", "transportation"], ["title-7", "agriculture"], ["title-38", "veterans"],
+  [18, "crimes"], [21, "food&drugs"], [26, "taxes"], [47, "telecom"], [15, "commerce"], [42, "health"], [16, "conservation"], [49, "transportation"], [7, "agriculture"], [38, "veterans"],
 ] as const;
 
 export function RHeader({ activeTitle }: { activeTitle?: string }) {
@@ -28,7 +29,7 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
   return <>
     <div className={styles.topbar}>
       <Link href="/" className={styles.topbarHome}>ALL</Link>
-      {TOPBAR.map(([slug, label]) => <Link key={slug} data-active={activeTitle === slug || undefined} href={`/r/${slug}`}>{label}</Link>)}
+      {TOPBAR.map(([num, label]) => <Link key={num} data-active={(activeTitle && titleNumberFromSlug(activeTitle) === num) || undefined} href={`/r/${subredditSlug(num)}`}>{label}</Link>)}
       <Link href="/us" className={styles.topbarMore}>browse all titles »</Link>
     </div>
     <header className={styles.header}>
@@ -37,7 +38,7 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
         <label className="sr-only" htmlFor="r-search">Search laws and sections</label>
         <input id="r-search" data-testid="r-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="search laws & sections" autoComplete="off" />
         {items.length > 0 && query.trim().length >= 2 && <div className={styles.searchDrop} data-testid="r-search-suggestions">
-          {items.map((item) => <button type="button" key={item.url} onClick={() => router.push(item.url.replace(/^\/us\//, "/r/"))}><b>{item.citation}</b> — {item.heading}</button>)}
+          {items.map((item) => <button type="button" key={item.url} onClick={() => router.push(item.url.replace(/^\/us\/title-(\d+)\//, (_, title) => `/r/${subredditSlug(Number(title))}/`))}><b>{item.citation}</b> — {item.heading}</button>)}
         </div>}
       </form>
       <nav className={styles.headerLinks}>

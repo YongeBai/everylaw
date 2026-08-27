@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAiContent, getLaw, getLawNavigation, getTakes, lawUrl } from "@/lib/data";
+import { viewerVoterHash } from "@/lib/viewer";
 import { parseHistory } from "@/lib/history";
 import { VotePanel } from "@/components/vote-panel";
 import { TakesBoard } from "@/components/takes-board";
@@ -22,7 +23,7 @@ function AiBlock({ title, body, pending }: { title: string; body?: { body: strin
 
 export default async function LawPage({ params }: Props) {
   const { titleSlug, section } = await params; const law = await getLaw(titleSlug, decodeURIComponent(section)); if (!law) notFound();
-  const [content, takes, navigation] = await Promise.all([getAiContent(law.id), getTakes(law.id), getLawNavigation(law)]);
+  const [content, takes, navigation] = await Promise.all([getAiContent(law.id), viewerVoterHash().then((hash) => getTakes(law.id, hash)), getLawNavigation(law)]);
   const history = parseHistory(law.sourceCredit);
   const jsonLd = { "@context": "https://schema.org", "@type": "Legislation", name: law.heading, legislationIdentifier: law.citation, jurisdiction: "United States", text: law.bodyText };
   return <main className="shell py-10 md:py-16"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll("<", "\\u003c") }} />

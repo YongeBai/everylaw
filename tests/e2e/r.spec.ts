@@ -14,6 +14,9 @@ test("the front page of the U.S. Code lives at root with sort tabs", async ({ pa
 
 test("subreddits scope a title with sidebar info and related laws on posts", async ({ page }) => {
   await page.goto("/r/title-18");
+  // Bare title slugs redirect to the named canonical subreddit.
+  await expect(page).toHaveURL(/\/r\/title-18-CRIMES-AND-CRIMINAL-PROCEDURE$/);
+  await expect(page.getByTestId("subreddit-title")).toContainText("r/title-18-CRIMES-AND-CRIMINAL-PROCEDURE");
   await expect(page.getByTestId("subreddit-title")).toContainText(/crimes and criminal procedure/i);
   await expect(page.getByText("moderator")).toBeVisible();
   await page.goto("/r/title-18/1111");
@@ -45,14 +48,23 @@ test("voting from arrows records to browser history with dissent framing", async
   await expect(page.getByTestId("history-share")).toContainText("laws judged");
 });
 
-test("comments support stance cases, replies, and up/down votes", async ({ page }) => {
+test("comments carry the commenter's post vote and follow vote changes", async ({ page }) => {
   await page.goto("/r/title-21/347");
   const stamp = Date.now();
+  const arrows = page.getByTestId(/^arrows-\d+$/).first();
+  await arrows.getByRole("button", { name: /Keep/ }).click();
+  await expect(arrows.getByRole("button", { name: /Keep/ })).toHaveAttribute("aria-pressed", "true");
+
   await page.getByTestId("comment-body").fill(`Pat-shape rules are settled lobby residue ${stamp}`);
   await page.getByTestId("comment-save").click();
   const comment = page.getByTestId(/^comment-\d+$/).filter({ hasText: String(stamp) }).first();
   await expect(comment).toBeVisible();
   const id = (await comment.getAttribute("data-testid"))!.replace("comment-", "");
+  await expect(page.getByTestId(`cvote-${id}`)).toContainText("upvoted");
+
+  // Changing the post vote flips the badge on the viewer's own comments.
+  await arrows.getByRole("button", { name: /Dissolve/ }).click();
+  await expect(page.getByTestId(`cvote-${id}`)).toContainText("downvoted");
 
   await page.getByTestId(`cup-${id}`).click();
   await expect(page.getByTestId(`cscore-${id}`)).toContainText("1 point");
@@ -62,7 +74,13 @@ test("comments support stance cases, replies, and up/down votes", async ({ page 
   await page.getByTestId(`creply-${id}`).click();
   await page.getByTestId(`reply-body-${id}`).fill(`Disclosure still catches substitution ${stamp}`);
   await page.getByTestId(`reply-save-${id}`).click();
-  await expect(page.getByTestId(/^comment-\d+$/).filter({ hasText: `Disclosure still catches substitution ${stamp}` }).first()).toBeVisible();
+  const reply = page.getByTestId(/^comment-\d+$/).filter({ hasText: `Disclosure still catches substitution ${stamp}` }).first();
+  await expect(reply).toBeVisible();
+  await expect(reply.locator('[data-testid^="cvote-"]').first()).toContainText("downvoted");
+
+  // The badge survives a reload because it derives from the stored vote.
+  await page.reload();
+  await expect(page.getByTestId(`cvote-${id}`)).toContainText("downvoted");
 });
 
 test("plain english leads the post and the actual law follows", async ({ page }) => {
@@ -109,5 +127,5 @@ test("header search suggests laws and routes into /r", async ({ page }) => {
   await page.getByTestId("r-search").fill("margarine");
   await expect(page.getByTestId("r-search-suggestions")).toBeVisible();
   await page.getByTestId("r-search-suggestions").getByRole("button", { name: /21 U\.S\.C\. § 347/ }).first().click();
-  await expect(page).toHaveURL(/\/r\/title-21\/347/);
+  await expect(page).toHaveURL(/\/r\/title-21-FOOD-AND-DRUGS\/347/);
 });

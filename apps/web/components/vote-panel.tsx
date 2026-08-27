@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { emitPostVote } from "@/lib/vote-sync";
 
 type Counts = { keepCount: number; dissolveCount: number; totalCount: number; dissolveRatio: number; direction?: string };
 
@@ -19,7 +20,7 @@ export function VotePanel({ nodeId, initial }: { nodeId: number; initial: Counts
     setPending(true); setError("");
     const response = await fetch("/api/vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, direction }) });
     const result = await response.json();
-    if (response.ok) setCounts(result);
+    if (response.ok) { setCounts(result); emitPostVote(nodeId, direction === "keep" ? "up" : "down"); }
     else setError(result.error || "Vote failed");
     setPending(false);
   }

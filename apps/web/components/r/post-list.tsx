@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { agePhrase, rPostUrl, type RPost } from "@/lib/reddit-data";
+import { subredditSlug } from "@/lib/title-names";
 import { VoteArrows } from "@/components/r/vote-arrows";
 import styles from "@/app/r/reddit.module.css";
 
@@ -20,7 +21,7 @@ export function PostList({ posts, startRank = 1 }: { posts: RPost[]; startRank?:
             {post.status !== "active" && <span className={styles.postFlair}>{post.status}</span>}
             {post.recentVotes > 0 && <span className={styles.postFlair}>{post.recentVotes} votes this week</span>}
           </p>
-          <p className={styles.tagline}>submitted {agePhrase(post.enactedDate)} by {post.enactingPl ?? "Congress"} to <Link href={`/r/title-${post.title}`}>r/title-{post.title}</Link> · {post.keepCount} keep · {post.dissolveCount} dissolve</p>
+          <p className={styles.tagline}>submitted {agePhrase(post.enactedDate)} by {post.enactingPl ?? "Congress"} to <Link href={`/r/${subredditSlug(post.title)}`}>r/{subredditSlug(post.title)}</Link> · {post.keepCount} keep · {post.dissolveCount} dissolve</p>
           <p className={styles.buttons}><Link href={url}>{post.commentCount} case{post.commentCount === 1 ? "" : "s"}</Link><Link href={url}>read the law</Link><span>share</span></p>
         </div>
       </article>;

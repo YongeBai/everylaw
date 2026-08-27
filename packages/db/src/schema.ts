@@ -164,7 +164,6 @@ export const takes = pgTable(
     nodeId: bigint('node_id', { mode: 'number' })
       .notNull()
       .references(() => lawNodes.id),
-    stance: text('stance').notNull(), // keep|dissolve
     body: text('body').notNull(),
     voterHash: char('voter_hash', { length: 64 }).notNull(),
     ipHash: char('ip_hash', { length: 64 }).notNull(),
@@ -177,8 +176,7 @@ export const takes = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index('takes_node_idx').on(t.nodeId, t.stance, t.upvoteCount),
-    check('takes_stance_ck', sql`stance in ('keep', 'dissolve')`),
+    index('takes_node_idx').on(t.nodeId, t.upvoteCount),
     check('takes_body_len_ck', sql`char_length(body) <= 280`),
   ],
 );

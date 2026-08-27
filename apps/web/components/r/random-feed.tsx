@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { VoteArrows } from "@/components/r/vote-arrows";
 import { agePhrase } from "@/lib/reddit-format";
+import { subredditSlug } from "@/lib/title-names";
 import styles from "@/app/r/reddit.module.css";
 
 type RandomLaw = {
@@ -76,7 +77,7 @@ export function RandomFeed() {
     {laws.map((law) => <article key={law.id} className={styles.section} style={{ marginBottom: 14 }} data-testid={`random-card-${law.id}`}>
       <div className={styles.sectionHead} style={{ textTransform: "none" }}>
         <Link href={law.url}>{law.citation} — {law.heading}</Link>
-        <span className={styles.aiBadge}>r/title-{law.title} · {agePhrase(law.enactedDate)} · {law.wordCount.toLocaleString()} words</span>
+        <span className={styles.aiBadge}>r/{subredditSlug(law.title)} · {agePhrase(law.enactedDate)} · {law.wordCount.toLocaleString()} words</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0,1fr)", gap: 10, padding: "10px 12px" }}>
         <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={law.url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} size="post" />

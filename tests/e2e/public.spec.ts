@@ -47,6 +47,8 @@ test("structured take creation and idempotent upvote", async ({ page }) => {
   await page.getByTestId("take-body").fill(`${marker}: the rule reaches purely intrastate sales without a useful modern justification.`);
   await page.getByTestId("submit-take").click(); await expect(page.getByText("Your case is live.")).toBeVisible();
   const take = page.getByTestId("take").filter({ hasText: marker }); await expect(take).toBeVisible();
+  await page.getByTestId("vote-dissolve").click();
+  await expect(take.locator('[data-testid^="take-vote-"]')).toContainText("downvoted");
   const upvote = take.getByRole("button"); await upvote.click(); await expect(upvote).toHaveText("▲ 1"); await upvote.click(); await expect(upvote).toHaveText("▲ 1");
   await page.waitForLoadState("networkidle");
   expect(errors).toEqual([]);

@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { onPostVote, type PostVote } from "@/lib/vote-sync";
 import styles from "@/app/r/reddit.module.css";
 
-export type RComment = { id: number; stance: "keep" | "dissolve" | null; body: string; upvoteCount: number; downvoteCount: number; parentId: number | null; createdAt: string };
+export type RComment = { id: number; body: string; upvoteCount: number; downvoteCount: number; parentId: number | null; createdAt: string; vote: PostVote | null; mine: boolean };
 
 function ago(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -14,6 +15,11 @@ function ago(iso: string): string {
   if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
   const days = Math.floor(hours / 24);
   return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+export function VoteBadge({ id, vote }: { id: number; vote: PostVote | null }) {
+  if (!vote) return null;
+  return <span data-vote={vote} data-testid={`cvote-${id}`} className={styles.voteTag} title={`this commenter ${vote === "up" ? "upvoted" : "downvoted"} this law`}>{vote === "up" ? "▲ upvoted" : "▼ downvoted"}</span>;
 }
 
 function CommentForm({ nodeId, parentId, onPosted, onCancel }: { nodeId: number; parentId: number | null; onPosted: (comment: RComment) => void; onCancel?: () => void }) {
@@ -29,7 +35,7 @@ function CommentForm({ nodeId, parentId, onPosted, onCancel }: { nodeId: number;
   }
 
   return <form className={styles.commentForm} onSubmit={submit} data-testid={parentId ? `reply-form-${parentId}` : "comment-form"}>
-    <textarea data-testid={parentId ? `reply-body-${parentId}` : "comment-body"} required minLength={3} maxLength={280} value={body} onChange={(event) => setBody(event.target.value)} placeholder="one claim, 280 characters (your comment carries your current vote)" />
+    <textarea data-testid={parentId ? `reply-body-${parentId}` : "comment-body"} required minLength={3} maxLength={280} value={body} onChange={(event) => setBody(event.target.value)} placeholder="one claim, 280 characters — your comment carries your current vote" />
     <div className={styles.formRow}>
       <span>{body.length}/280</span>
       {onCancel && <button type="button" className={styles.linkButton} onClick={onCancel}>cancel</button>}
@@ -62,7 +68,7 @@ function CommentNode({ comment, childrenOf, nodeId, onPosted, onVoted, depth }: 
     <div className={styles.commentMain}>
       <p className={styles.commentMeta}>
         <button className={styles.collapse} onClick={() => setCollapsed((now) => !now)}>[{collapsed ? "+" : "–"}]</button>
-        {comment.stance && <span data-stance={comment.stance} className={styles.stanceTag}>{comment.stance.toUpperCase()}</span>}
+        <VoteBadge id={comment.id} vote={comment.vote} />
         <b data-testid={`cscore-${comment.id}`}>{score} point{Math.abs(score) === 1 ? "" : "s"}</b>
         <span>({comment.upvoteCount}|{comment.downvoteCount})</span>
         <span>{ago(comment.createdAt)}</span>
@@ -82,6 +88,12 @@ function CommentNode({ comment, childrenOf, nodeId, onPosted, onVoted, depth }: 
 
 export function Comments({ nodeId, initial }: { nodeId: number; initial: RComment[] }) {
   const [comments, setComments] = useState<RComment[]>(initial);
+
+  // When the viewer changes their vote on this law, their comments' badges follow.
+  useEffect(() => onPostVote(({ nodeId: votedNode, vote }) => {
+    if (votedNode !== nodeId) return;
+    setComments((now) => now.map((comment) => comment.mine ? { ...comment, vote } : comment));
+  }), [nodeId]);
 
   const childrenOf = useMemo(() => {
     const map = new Map<number | null, RComment[]>();

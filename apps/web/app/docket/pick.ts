@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { db } from "@everylaw/db";
 import { getAiContent, getLawById, getTakes, type LawSummary } from "@/lib/data";
+import { viewerVoterHash } from "@/lib/viewer";
 
 /** Trial days roll over at midnight Pacific time. */
 export function dayKey(offsetDays = 0): string {
@@ -40,7 +41,7 @@ export async function getDocket(): Promise<Docket | null> {
   const [law, aiContent, takes, yesterday] = await Promise.all([
     getLawById(todayId),
     getAiContent(todayId),
-    getTakes(todayId),
+    viewerVoterHash().then((hash) => getTakes(todayId, hash)),
     yesterdayId === todayId ? Promise.resolve(null) : getLawById(yesterdayId),
   ]);
   if (!law) return null;

@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAiContent, getLaw, getLawNavigation, getTakes, lawUrl } from "@/lib/data";
+import { viewerVoterHash } from "@/lib/viewer";
 import { parseHistory } from "@/lib/history";
 import { highlightTerms } from "@/lib/terms";
 import { agePhrase, officialSourceUrl, rPostUrl } from "@/lib/reddit-data";
+import { subredditSlug } from "@/lib/title-names";
 import { RHeader } from "@/components/r/header";
 import { VoteArrows } from "@/components/r/vote-arrows";
 import { OfficialText } from "@/components/r/official-text";
@@ -28,7 +30,7 @@ export default async function RPostPage({ params, searchParams }: Props) {
   const trialNumber = /^\d+$/.test(trial ?? "") ? Number(trial) : null;
   const law = await getLaw(titleSlug, decodeURIComponent(section));
   if (!law) notFound();
-  const [content, takes, navigation] = await Promise.all([getAiContent(law.id), getTakes(law.id), getLawNavigation(law)]);
+  const [content, takes, navigation] = await Promise.all([getAiContent(law.id), viewerVoterHash().then((hash) => getTakes(law.id, hash)), getLawNavigation(law)]);
   const history = parseHistory(law.sourceCredit);
   const url = rPostUrl(law);
   const sourceUrl = officialSourceUrl(law.title, law.num);
@@ -42,7 +44,7 @@ export default async function RPostPage({ params, searchParams }: Props) {
           <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} size="post" />
           <div className={styles.postHead}>
             <h1><Link href={sourceUrl} target="_blank" rel="noopener">{law.citation} — {law.heading}</Link>{law.status !== "active" && <span className={styles.postFlair}>{law.status}</span>}</h1>
-            <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={`/r/${titleSlug}`}>r/{titleSlug}</Link> · {law.wordCount.toLocaleString()} words · {law.keepCount} keep · {law.dissolveCount} dissolve · <Link href={lawUrl(law)}>citable record</Link></p>
+            <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={`/r/${subredditSlug(law.title)}`}>r/{subredditSlug(law.title)}</Link> · {law.wordCount.toLocaleString()} words · {law.keepCount} keep · {law.dissolveCount} dissolve · <Link href={lawUrl(law)}>citable record</Link></p>
 
             <section className={styles.section} data-testid="post-translation">
               <div className={styles.sectionHead}>in plain english<span className={styles.aiBadge}>AI-assisted · reviewed · not legal advice</span></div>

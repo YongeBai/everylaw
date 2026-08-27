@@ -28,7 +28,7 @@ const lawSelect = sql.raw(`
 `);
 
 export async function getLaw(title: string, section: string): Promise<LawSummary | null> {
-  const titleNum = title.replace(/^title-/, "");
+  const titleNum = title.match(/^title-(\d+)/)?.[1] ?? title;
   const variantMatch = section.match(/^(.*)~(\d+)$/); const num = variantMatch?.[1] ?? section; const suffix = variantMatch ? `~${variantMatch[2]}` : "";
   const rows = await db.execute(sql`${lawSelect} WHERE n.node_type='section' AND n.identifier LIKE ${`/us/usc/t${titleNum}/%`} AND n.num ILIKE ${num} AND (${suffix}='' OR n.identifier LIKE ${`%${suffix}`}) ORDER BY n.identifier LIMIT 1`);
   return rows[0] ? mapLaw(rows[0]) : null;
@@ -54,13 +54,13 @@ export async function getTitles() {
 }
 
 export async function getTitleSections(title: string, limit = 200, offset = 0) {
-  const titleNum = title.replace(/^title-/, "");
+  const titleNum = title.match(/^title-(\d+)/)?.[1] ?? title;
   const rows = await db.execute(sql`${lawSelect} WHERE n.node_type='section' AND n.identifier LIKE ${`/us/usc/t${titleNum}/s%`} ORDER BY n.sort_key LIMIT ${limit} OFFSET ${offset}`);
   return rows.map(mapLaw);
 }
 
 export async function getTitleSectionCount(title: string) {
-  const titleNum = title.replace(/^title-/, ""); const rows = await db.execute(sql`SELECT count(*)::int count FROM law_nodes WHERE node_type='section' AND identifier LIKE ${`/us/usc/t${titleNum}/s%`}`);
+  const titleNum = title.match(/^title-(\d+)/)?.[1] ?? title; const rows = await db.execute(sql`SELECT count(*)::int count FROM law_nodes WHERE node_type='section' AND identifier LIKE ${`/us/usc/t${titleNum}/s%`}`);
   return Number(rows[0]!.count);
 }
 
@@ -81,15 +81,11 @@ export async function getAiContent(nodeId: number) {
   return Object.fromEntries(rows.map((row) => [String(row.content_type), { id: Number(row.id), body: String(row.body_md) }]));
 }
 
-export async function getTakes(nodeId: number) {
-  // takes.stance was removed (0007, worktree remove-keep-dissolve): a comment's
-  // stance is its author's CURRENT vote on the law, joined by voter_hash.
-  const rows = await db.execute(sql`
-    SELECT t.id, t.body, t.upvote_count, t.downvote_count, t.parent_id, t.created_at, v.direction AS stance
-    FROM takes t LEFT JOIN votes v ON v.node_id = t.node_id AND v.voter_hash = t.voter_hash
-    WHERE t.node_id=${nodeId} AND t.moderation_status='published'
-    ORDER BY t.upvote_count DESC, t.created_at DESC`);
-  return rows.map((row) => ({ id: Number(row.id), stance: row.stance ? (String(row.stance) as "keep"|"dissolve") : null, body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count ?? 0), parentId: row.parent_id === null || row.parent_id === undefined ? null : Number(row.parent_id), createdAt: String(row.created_at) }));
+// A take's side badge is the commenter's current vote on the law, not a stored
+// stance — join votes by voter_hash so it stays in sync with vote changes.
+export async function getTakes(nodeId: number, viewerHash?: string | null) {
+  const rows = await db.execute(sql`SELECT t.id, t.body, t.upvote_count, t.downvote_count, t.parent_id, t.created_at, v.direction, t.voter_hash = ${viewerHash ?? ""} AS mine FROM takes t LEFT JOIN votes v ON v.node_id = t.node_id AND v.voter_hash = t.voter_hash WHERE t.node_id=${nodeId} AND t.moderation_status='published' ORDER BY t.upvote_count DESC, t.created_at DESC`);
+  return rows.map((row) => ({ id: Number(row.id), body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count ?? 0), parentId: row.parent_id === null || row.parent_id === undefined ? null : Number(row.parent_id), createdAt: String(row.created_at), vote: (row.direction === "keep" ? "up" : row.direction === "dissolve" ? "down" : null) as "up" | "down" | null, mine: Boolean(row.mine) }));
 }
 
 export async function getRankings(kind: string, limit = 50): Promise<LawSummary[]> {
