@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       item: {
         citation: String(revealed.citation),
         heading: String(revealed.heading),
-        url: wasReal ? `/us/title-${title}/${encodeURIComponent(`${String(revealed.num)}${suffix}`)}` : null,
+        url: wasReal ? `/r/title-${title}/${encodeURIComponent(`${String(revealed.num)}${suffix}`)}` : null,
         enactedYear: wasReal && revealed.enacted_date ? String(revealed.enacted_date).slice(0, 4) : null,
         keepCount: wasReal ? Number(revealed.keep_count ?? 0) : null,
         dissolveCount: wasReal ? Number(revealed.dissolve_count ?? 0) : null,

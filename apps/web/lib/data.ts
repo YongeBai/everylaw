@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@everylaw/db";
+import { rPostUrlFrom } from "@/lib/reddit-format";
 
 export type LawSummary = {
   id: number; identifier: string; citation: string; num: string; heading: string;
@@ -117,4 +118,4 @@ export async function getLawNavigation(law: LawSummary) {
   return { previous: previousRows[0] ? mapLaw(previousRows[0]) : null, next: nextRows[0] ? mapLaw(nextRows[0]) : null, related: relatedRows.map(mapLaw) };
 }
 
-export function lawUrl(law: Pick<LawSummary, "title"|"num"|"identifier">) { const suffix = law.identifier.match(/(~\d+)$/)?.[1] ?? ""; return `/us/title-${law.title}/${encodeURIComponent(`${law.num}${suffix}`)}`; }
+export function lawUrl(law: Pick<LawSummary, "title"|"num"|"identifier">) { return rPostUrlFrom(law.title, law.num, law.identifier); }

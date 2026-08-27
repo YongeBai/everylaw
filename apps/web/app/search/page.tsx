@@ -1,11 +1,53 @@
-import { SearchBox } from "@/components/search-box";
-import { LawCard } from "@/components/law-card";
-import { searchLaws } from "@/lib/data";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { lawUrl, searchLaws } from "@/lib/data";
+import { agePhrase } from "@/lib/reddit-format";
+import { RHeader } from "@/components/r/header";
+import { VoteArrows } from "@/components/r/vote-arrows";
+import styles from "@/app/r/reddit.module.css";
 
-export const metadata = { title: "Search federal law" };
+export const metadata: Metadata = { title: "search — everylaw" };
+export const dynamic = "force-dynamic";
+
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const query = (await searchParams).q?.slice(0, 100) || ""; const results = query ? await searchLaws(query) : [];
-  return <main className="shell py-16"><p className="eyebrow">Find the rule behind the headline</p><h1 className="serif text-5xl font-black mt-3">Search federal law</h1><div className="mt-8 max-w-3xl"><SearchBox large /></div>
-    {query && <section className="mt-12"><p className="text-[#68736d]">{results.length} results for <strong className="text-[#13241d]">“{query}”</strong></p><div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-6">{results.map((law) => <LawCard law={law} key={law.id} />)}</div>{results.length === 0 && <p className="paper-card rounded-xl p-6 mt-6">No matching section yet. Try a shorter phrase or citation.</p>}</section>}
-  </main>;
+  const query = (await searchParams).q?.slice(0, 100) || "";
+  const results = query ? await searchLaws(query) : [];
+
+  return <div className={styles.page}>
+    <RHeader />
+    <div className={styles.shell}>
+      <main className={styles.main}>
+        <h1 style={{ font: "700 16px Verdana, sans-serif", margin: "4px 4px 8px" }} data-testid="search-title">{query ? <>search results for “{query}”</> : "search"}</h1>
+        {!query && <p style={{ padding: "4px", color: "#888" }}>Type a citation, a phrase, or a headline into the search box above.</p>}
+        {query && results.length === 0 && <p style={{ padding: "4px", color: "#888" }} data-testid="search-empty">No matching section yet. Try a shorter phrase or citation.</p>}
+        {results.length > 0 && <div data-testid="search-results">
+          {results.map((law, index) => {
+            const url = lawUrl(law);
+            return <article className={styles.thing} key={law.id} data-testid={`result-${law.id}`}>
+              <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+                <span className={styles.rank}>{index + 1}</span>
+                <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} />
+              </div>
+              <span className={styles.thumb} aria-hidden>§</span>
+              <div className={styles.entry}>
+                <p className={styles.postTitle}>
+                  <Link href={url}>{law.citation} — {law.heading}</Link>
+                  {law.status !== "active" && <span className={styles.postFlair}>{law.status}</span>}
+                </p>
+                <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={`/r/title-${law.title}`}>r/title-{law.title}</Link> · {law.keepCount} keep · {law.dissolveCount} dissolve</p>
+                <p className={styles.buttons}><Link href={url}>read the law</Link></p>
+              </div>
+            </article>;
+          })}
+        </div>}
+      </main>
+      <aside className={styles.side}>
+        <div className={styles.sideBox}><h2>search tips</h2><div className={styles.sideBoxBody}>
+          <p>Search matches headings, citations, and the full text of every section in force.</p>
+          <p>Try <Link href="/search?q=margarine">margarine</Link>, <Link href="/search?q=flag">flag</Link>, or a citation like <Link href={`/search?q=${encodeURIComponent("18 U.S.C. § 700")}`}>18 U.S.C. § 700</Link>.</p>
+        </div></div>
+      </aside>
+    </div>
+    <footer className={styles.footer}>Official text is public domain.</footer>
+  </div>;
 }

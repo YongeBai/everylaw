@@ -18,7 +18,7 @@ function toCard(row: CardRow) {
     citation: String(row.citation),
     heading: String(row.heading),
     summary: row.summary ? String(row.summary) : String(row.excerpt ?? "").trim(),
-    url: `/us/title-${title}/${encodeURIComponent(`${String(row.num)}${suffix}`)}`,
+    url: `/r/title-${title}/${encodeURIComponent(`${String(row.num)}${suffix}`)}`,
     elo: Math.round(Number(row.elo ?? 1500)),
     matches: Number(row.matches ?? 0),
     keepCount: Number(row.keep_count ?? 0),

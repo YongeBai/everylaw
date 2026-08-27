@@ -38,7 +38,7 @@ const ORDERS: Record<RSort, ReturnType<typeof sql.raw>> = {
   kept: sql.raw("keep_count DESC, total_count DESC, n.sort_key"),
 };
 
-export async function getRPosts(sort: RSort, titleNum?: number, limit = 25): Promise<RPost[]> {
+export async function getRPosts(sort: RSort, titleNum?: number, limit = 25, offset = 0): Promise<RPost[]> {
   const scope = titleNum
     ? sql`n.identifier LIKE ${"/us/usc/t" + titleNum + "/%"}`
     : sql`(COALESCE(v.total_count,0) > 0 OR n.featured_tier >= 1)`;
@@ -53,7 +53,7 @@ export async function getRPosts(sort: RSort, titleNum?: number, limit = 25): Pro
     LEFT JOIN LATERAL (SELECT count(*)::int cnt FROM votes WHERE node_id = n.id AND updated_at > now() - interval '7 days') r ON true
     WHERE n.node_type = 'section' AND ${scope}
     ORDER BY ${ORDERS[sort]}
-    LIMIT ${limit}
+    LIMIT ${limit} OFFSET ${offset}
   `);
   return rows.map(mapPost);
 }

@@ -29,7 +29,7 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
     <div className={styles.topbar}>
       <Link href="/" className={styles.topbarHome}>ALL</Link>
       {TOPBAR.map(([slug, label]) => <Link key={slug} data-active={activeTitle === slug || undefined} href={`/r/${slug}`}>{label}</Link>)}
-      <Link href="/us" className={styles.topbarMore}>browse all titles »</Link>
+      <Link href="/r" className={styles.topbarMore}>browse all titles »</Link>
     </div>
     <header className={styles.header}>
       <Link href="/" className={styles.logo}><span className={styles.logoMark} aria-hidden>§</span>everylaw<i>the front page of the U.S. Code</i></Link>
@@ -37,7 +37,7 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
         <label className="sr-only" htmlFor="r-search">Search laws and sections</label>
         <input id="r-search" data-testid="r-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="search laws & sections" autoComplete="off" />
         {items.length > 0 && query.trim().length >= 2 && <div className={styles.searchDrop} data-testid="r-search-suggestions">
-          {items.map((item) => <button type="button" key={item.url} onClick={() => router.push(item.url.replace(/^\/us\//, "/r/"))}><b>{item.citation}</b> — {item.heading}</button>)}
+          {items.map((item) => <button type="button" key={item.url} onClick={() => router.push(item.url)}><b>{item.citation}</b> — {item.heading}</button>)}
         </div>}
       </form>
       <nav className={styles.headerLinks}>

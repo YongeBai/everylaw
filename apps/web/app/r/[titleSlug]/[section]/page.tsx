@@ -18,7 +18,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { titleSlug, section } = await params;
   const law = await getLaw(titleSlug, decodeURIComponent(section));
   if (!law) return { title: "Law not found" };
-  // /us stays the canonical, citable record; /r is the discussion surface.
   return { title: `${law.citation} — ${law.heading}`, description: `Read ${law.citation} in plain English, see its history, and make the case to keep or dissolve it.`, alternates: { canonical: lawUrl(law) } };
 }
 
@@ -42,7 +41,7 @@ export default async function RPostPage({ params, searchParams }: Props) {
           <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} size="post" />
           <div className={styles.postHead}>
             <h1><Link href={sourceUrl} target="_blank" rel="noopener">{law.citation} — {law.heading}</Link>{law.status !== "active" && <span className={styles.postFlair}>{law.status}</span>}</h1>
-            <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={`/r/${titleSlug}`}>r/{titleSlug}</Link> · {law.wordCount.toLocaleString()} words · {law.keepCount} keep · {law.dissolveCount} dissolve · <Link href={lawUrl(law)}>citable record</Link></p>
+            <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={`/r/${titleSlug}`}>r/{titleSlug}</Link> · {law.wordCount.toLocaleString()} words · {law.keepCount} keep · {law.dissolveCount} dissolve</p>
 
             <section className={styles.section} data-testid="post-translation">
               <div className={styles.sectionHead}>in plain english<span className={styles.aiBadge}>AI-assisted · reviewed · not legal advice</span></div>

@@ -7,8 +7,9 @@ import { PostList } from "@/components/r/post-list";
 import { getRPosts, R_SORTS, type RSort } from "@/lib/reddit-data";
 import styles from "../reddit.module.css";
 
-type Props = { params: Promise<{ titleSlug: string }>; searchParams: Promise<{ sort?: string }> };
+type Props = { params: Promise<{ titleSlug: string }>; searchParams: Promise<{ sort?: string; page?: string }> };
 export const dynamic = "force-dynamic";
+const PAGE_SIZE = 25;
 
 const isSort = (value: string): value is RSort => R_SORTS.some((sort) => sort.key === value);
 
@@ -19,13 +20,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Subreddit({ params, searchParams }: Props) {
   const { titleSlug } = await params;
-  const { sort: raw } = await searchParams;
+  const { sort: raw, page: rawPage } = await searchParams;
   const titleNum = Number(titleSlug.match(/^title-(\d+)$/)?.[1]);
   if (!titleNum) notFound();
   const sort: RSort = raw && isSort(raw) ? raw : "hot";
-  const [posts, titles] = await Promise.all([getRPosts(sort, titleNum), getTitles()]);
+  const requestedPage = Number(rawPage || 1);
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const [posts, titles] = await Promise.all([getRPosts(sort, titleNum, PAGE_SIZE, (page - 1) * PAGE_SIZE), getTitles()]);
   const info = titles.find((title) => Number(title.num) === titleNum);
   if (!info) notFound();
+  const pageCount = Math.max(1, Math.ceil(info.sectionCount / PAGE_SIZE));
+  const pageUrl = (target: number) => `/r/${titleSlug}?${new URLSearchParams({ ...(sort !== "hot" ? { sort } : {}), ...(target > 1 ? { page: String(target) } : {}) })}`.replace(/\?$/, "");
 
   return <div className={styles.page}>
     <RHeader activeTitle={titleSlug} />
@@ -35,14 +40,20 @@ export default async function Subreddit({ params, searchParams }: Props) {
     <div className={styles.shell}>
       <main className={styles.main}>
         <h1 style={{ font: "700 16px Verdana, sans-serif", margin: "4px 4px 8px" }} data-testid="subreddit-title">r/{titleSlug} — {info.heading}</h1>
-        <PostList posts={posts} />
+        <PostList posts={posts} startRank={(page - 1) * PAGE_SIZE + 1} />
+        <nav className={styles.tagline} style={{ padding: "8px 4px" }} aria-label="Pages" data-testid="subreddit-pages">view more:{" "}
+          {page > 1 ? <Link href={pageUrl(page - 1)} rel="prev">‹ prev</Link> : <span>‹ prev</span>}
+          {" | "}
+          {page < pageCount ? <Link href={pageUrl(page + 1)} rel="next">next ›</Link> : <span>next ›</span>}
+          <span style={{ marginLeft: 8 }}>page {page} of {pageCount}</span>
+        </nav>
       </main>
       <aside className={styles.side}>
         <div className={styles.sideBox}><h2>about r/{titleSlug}</h2><div className={styles.sideBoxBody}>
           <p><b>Title {titleNum} — {info.heading}.</b> Every section of this title is a post: read it, read its translation and history, then vote keep or dissolve.</p>
           <div className={styles.sideStat}><span>sections</span><b>{info.sectionCount.toLocaleString()}</b></div>
           <div className={styles.sideStat}><span>moderator</span><b>Congress (inactive)</b></div>
-          <p style={{ marginTop: 8 }}><Link href={`/us/title-${titleNum}`}>browse the citable record →</Link></p>
+          <p style={{ marginTop: 8 }}><a href={`https://uscode.house.gov/browse/prelim@title${titleNum}`} target="_blank" rel="noopener">official record at uscode.house.gov ↗</a></p>
         </div></div>
       </aside>
     </div>
