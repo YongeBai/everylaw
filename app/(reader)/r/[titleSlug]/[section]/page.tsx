@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getAiContent, getDefinedTermsInScope, getLaw, getLawNavigation, getTakes, getTermsDefinedByLaw } from "@/lib/data";
 import { viewerVoterHash } from "@/lib/viewer";
+import { getLatestTrial } from "@/lib/trials";
+import { TrialFlair } from "@/components/reader/trial-flair";
 import { parseHistory } from "@/lib/history";
 import { highlightTerms, markDefinedTerms } from "@/lib/terms";
 import { agePhrase, lawUrl, officialSourceUrl, subredditUrl, wikiUrl } from "@/lib/reddit-format";
@@ -33,7 +35,7 @@ export default async function RPostPage({ params }: Props) {
   const url = lawUrl(law);
   const requestedUrl = `/r/${titleSlug}/${encodeURIComponent(decodeURIComponent(section))}`;
   if (requestedUrl !== url) permanentRedirect(url);
-  const [content, takes, navigation, definedTerms, locallyDefinedTerms] = await Promise.all([getAiContent(law.id), viewerVoterHash().then((hash) => getTakes(law.id, hash)), getLawNavigation(law), getDefinedTermsInScope(law), getTermsDefinedByLaw(law.id)]);
+  const [content, takes, navigation, definedTerms, locallyDefinedTerms, trial] = await Promise.all([getAiContent(law.id), viewerVoterHash().then((hash) => getTakes(law.id, hash)), getLawNavigation(law), getDefinedTermsInScope(law), getTermsDefinedByLaw(law.id), getLatestTrial(law.id)]);
   const history = parseHistory(law.sourceCredit);
   const sourceUrl = officialSourceUrl(law.title, law.num);
   const titleWikiUrl = wikiUrl(law.title);
@@ -53,7 +55,7 @@ export default async function RPostPage({ params }: Props) {
         <article className={styles.post}>
           <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} size="post" />
           <div className={styles.postHead}>
-            <h1><Link href={sourceUrl} target="_blank" rel="noopener">{law.citation} — {law.heading}</Link>{law.status !== "active" && <span className={styles.postFlair}>{law.status}</span>}</h1>
+            <h1><Link href={sourceUrl} target="_blank" rel="noopener">{law.citation} — {law.heading}</Link>{law.status !== "active" && <span className={styles.postFlair}>{law.status}</span>}<TrialFlair trial={trial} /></h1>
             <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={subredditUrl(law.title)}>r/{subredditSlug(law.title)}</Link> · {law.wordCount.toLocaleString()} words<VoteTotals nodeId={law.id} keepCount={law.keepCount} dissolveCount={law.dissolveCount} always /></p>
 
             <section className={styles.section} data-testid="post-translation">

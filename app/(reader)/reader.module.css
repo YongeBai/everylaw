@@ -50,6 +50,18 @@
 .domain { margin-left: 5px; font-size: 10px; font-weight: 400; color: var(--muted); white-space: nowrap; }
 .domain a { color: var(--muted) !important; }
 .postFlair { display: inline-block; margin-left: 6px; padding: 0 5px; border: 1px solid var(--note-border); border-radius: 2px; background: var(--note-bg); color: var(--note-ink); font-size: 9px; font-weight: 700; vertical-align: 2px; }
+.trialAlignment { margin: 4px 0 0; text-align: center; font-size: 11px; font-style: italic; color: var(--muted); }
+.shareVerdict { display: block; margin: 8px auto 0; border: 1px solid var(--header-border); background: var(--hover-tint); color: var(--link); padding: 3px 10px; font: 700 11px Verdana, sans-serif; cursor: pointer; }
+.shareVerdict:hover { text-decoration: underline; }
+.trialWatermark { margin: 12px 0 0; text-align: center; font-size: 10px; color: var(--muted); border-top: 1px dotted var(--border-mid); padding-top: 6px; }
+.firstVoteBar { position: fixed; left: 12px; bottom: 12px; z-index: 60; display: flex; gap: 8px; align-items: center; max-width: 440px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--header-border); border-left: 3px solid var(--orangered); font: 11px Verdana, sans-serif; color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+.firstVoteBar a { font-weight: 700; }
+.firstVoteBar button { border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; padding: 0 2px; }
+.trialFlair { display: inline-block; margin-left: 6px; padding: 0 5px; border: 1px solid var(--border-mid); border-radius: 2px; background: var(--hover-tint); color: var(--muted); font-size: 9px; font-weight: 700; vertical-align: 2px; text-decoration: none; white-space: nowrap; }
+.trialFlair[data-verdict="affirmed"] { border-color: var(--keep-ink); background: var(--keep-tint); color: var(--keep-ink); }
+.trialFlair[data-verdict="dissolved"] { border-color: var(--dissolve-ink); background: var(--dissolve-tint); color: var(--dissolve-ink); }
+.trialFlair[data-verdict="open"] { border-color: var(--orangered); color: var(--orangered); }
+a.trialFlair:hover { text-decoration: underline; }
 .tagline { margin: 1px 0; color: var(--muted); font-size: 10px; }
 .tagline a { color: var(--link-soft) !important; }
 .keepInk { color: var(--keep-ink); font-weight: 700; }

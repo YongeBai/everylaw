@@ -1,26 +1,46 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { readLocalVotes } from "@/lib/local-history";
 import { onPostVote } from "@/lib/vote-sync";
 import styles from "@/app/(reader)/reader.module.css";
 
 type Counts = { keepCount: number; dissolveCount: number };
 type Props = Counts & { nodeId: number };
+type Mine = "keep" | "dissolve" | null;
 
-function useVoteCounts({ nodeId, keepCount, dissolveCount }: Props): Counts {
+/**
+ * The split is earned, not given: until this browser has voted on a section,
+ * only the turnout shows. Voting reveals the split — and once revealed it
+ * stays revealed (information can't be unseen), even if the vote is undone.
+ */
+function useVoteState({ nodeId, keepCount, dissolveCount }: Props): Counts & { mine: Mine; revealed: boolean } {
   const [counts, setCounts] = useState({ keepCount, dissolveCount });
+  const [mine, setMine] = useState<Mine>(null);
+  const [revealed, setRevealed] = useState(false);
 
-  useEffect(() => onPostVote((detail) => {
-    if (detail.nodeId === nodeId) setCounts({ keepCount: detail.keepCount, dissolveCount: detail.dissolveCount });
-  }), [nodeId]);
+  useEffect(() => {
+    const stored = readLocalVotes()[nodeId];
+    // localStorage is only readable after hydration; sync seed is deliberate.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (stored) { setMine(stored.direction); setRevealed(true); }
+    return onPostVote((detail) => {
+      if (detail.nodeId !== nodeId) return;
+      setCounts({ keepCount: detail.keepCount, dissolveCount: detail.dissolveCount });
+      setMine(detail.vote === "up" ? "keep" : detail.vote === "down" ? "dissolve" : null);
+      if (detail.vote) setRevealed(true);
+    });
+  }, [nodeId]);
 
-  return counts;
+  return { ...counts, mine, revealed };
 }
 
 export function VoteTotals({ nodeId, keepCount, dissolveCount, always = false }: Props & { always?: boolean }) {
-  const counts = useVoteCounts({ nodeId, keepCount, dissolveCount });
-  if (!always && counts.keepCount + counts.dissolveCount === 0) return null;
-  return <span data-testid={`vote-totals-${nodeId}`}> · <span className={styles.keepInk}>{counts.keepCount} keep</span> · <span className={styles.dissolveInk}>{counts.dissolveCount} dissolve</span></span>;
+  const state = useVoteState({ nodeId, keepCount, dissolveCount });
+  const total = state.keepCount + state.dissolveCount;
+  if (state.revealed) return <span data-testid={`vote-totals-${nodeId}`}> · <span className={styles.keepInk}>{state.keepCount} keep</span> · <span className={styles.dissolveInk}>{state.dissolveCount} dissolve</span></span>;
+  if (total === 0) return always ? <span data-testid={`vote-totals-${nodeId}`}> · no verdicts yet</span> : null;
+  return <span data-testid={`vote-totals-${nodeId}`}> · {total.toLocaleString()} verdict{total === 1 ? "" : "s"} in{always ? " — vote to see the split" : ""}</span>;
 }
 
 function verdictLean(keep: number, dissolve: number): "keep" | "dissolve" | undefined {
@@ -32,16 +52,23 @@ function verdictLean(keep: number, dissolve: number): "keep" | "dissolve" | unde
 }
 
 export function VoteLeanThumb({ nodeId, keepCount, dissolveCount, children }: Props & { children: ReactNode }) {
-  const counts = useVoteCounts({ nodeId, keepCount, dissolveCount });
-  return <span className={styles.thumb} data-lean={verdictLean(counts.keepCount, counts.dissolveCount)} aria-hidden>{children}</span>;
+  const state = useVoteState({ nodeId, keepCount, dissolveCount });
+  return <span className={styles.thumb} data-lean={verdictLean(state.keepCount, state.dissolveCount)} aria-hidden>{children}</span>;
 }
 
 export function DocketVoteTally({ nodeId, keepCount, dissolveCount }: Props) {
-  const counts = useVoteCounts({ nodeId, keepCount, dissolveCount });
-  const total = counts.keepCount + counts.dissolveCount;
-  const keepPct = total > 0 ? Math.round((counts.keepCount / total) * 100) : 50;
+  const state = useVoteState({ nodeId, keepCount, dissolveCount });
+  const total = state.keepCount + state.dissolveCount;
+  if (!state.revealed) return <div className={styles.trialTallyWrap} data-testid={`vote-totals-${nodeId}`}>
+    <p className={styles.trialTallyLabel}><b>{total.toLocaleString()} juror{total === 1 ? "" : "s"} so far — cast your verdict to see where the jury stands</b></p>
+  </div>;
+  const keepPct = total > 0 ? Math.round((state.keepCount / total) * 100) : 50;
+  const mySidePct = state.mine === "keep" ? keepPct : state.mine === "dissolve" ? 100 - keepPct : null;
   return <div className={styles.trialTallyWrap} data-testid={`vote-totals-${nodeId}`}>
     <div className={styles.trialTally} aria-label={`${keepPct}% keep`}><i style={{ width: `${keepPct}%` }} /></div>
-    <p className={styles.trialTallyLabel}><span>▲ {counts.keepCount.toLocaleString()} keep</span><b>{total.toLocaleString()} jurors so far</b><span>▼ {counts.dissolveCount.toLocaleString()} dissolve</span></p>
+    <p className={styles.trialTallyLabel}><span>▲ {state.keepCount.toLocaleString()} keep</span><b>{total.toLocaleString()} jurors so far</b><span>▼ {state.dissolveCount.toLocaleString()} dissolve</span></p>
+    {mySidePct !== null && total > 1 && <p className={styles.trialAlignment} data-testid={`alignment-${nodeId}`}>
+      {mySidePct >= 50 ? <>you’re with the majority — {mySidePct}% vote {state.mine}</> : <>you dissent — {100 - mySidePct}% went the other way</>}
+    </p>}
   </div>;
 }

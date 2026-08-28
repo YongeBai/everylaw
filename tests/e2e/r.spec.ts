@@ -66,7 +66,9 @@ test("post-list keep and dissolve totals follow the vote arrows", async ({ page 
   await arrows.getByTestId(/^arrow-dissolve-/).click();
   await expect(arrows.getByTestId(/^arrow-dissolve-/)).toHaveAttribute("aria-pressed", "false");
   if (initial.keepCount + initial.dissolveCount === 0) {
-    await expect(totals).toHaveCount(0);
+    // The split stays revealed once you've voted, even after undoing: 0–0.
+    await expect(totals).toContainText("0 keep");
+    await expect(totals).toContainText("0 dissolve");
   } else {
     await expect(totals).toContainText(`${initial.keepCount} keep`);
     await expect(totals).toContainText(`${initial.dissolveCount} dissolve`);

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { readLocalVotes, recordLocalVote, removeLocalVote } from "@/lib/local-history";
 import { directionToVote, emitPostVote, optimisticVoteCounts, type PostVoteCounts, type VoteDirection } from "@/lib/vote-sync";
@@ -11,10 +12,13 @@ type Props = {
   size?: "row" | "post";
 };
 
+const FIRST_VOTE_FLAG = "everylaw:first-vote-celebrated";
+
 export function VoteArrows({ nodeId, citation, heading, url, keepCount, dissolveCount, size = "row" }: Props) {
   const [counts, setCounts] = useState({ keep: keepCount, dissolve: dissolveCount });
   const [mine, setMine] = useState<VoteDirection>(null);
   const [error, setError] = useState("");
+  const [firstVote, setFirstVote] = useState(false);
   const countsRef = useRef<PostVoteCounts>({ keepCount, dissolveCount });
   const mineRef = useRef<VoteDirection>(null);
   const sequenceRef = useRef(0);
@@ -27,8 +31,13 @@ export function VoteArrows({ nodeId, citation, heading, url, keepCount, dissolve
     setCounts({ keep: nextCounts.keepCount, dissolve: nextCounts.dissolveCount });
     emitPostVote(nodeId, directionToVote(direction), nextCounts);
     if (!remember) return;
-    if (direction) recordLocalVote({ id: nodeId, citation, heading, url, direction, ...nextCounts, ts: Date.now() });
-    else removeLocalVote(nodeId);
+    if (direction) {
+      recordLocalVote({ id: nodeId, citation, heading, url, direction, ...nextCounts, ts: Date.now() });
+      try {
+        // Celebrate exactly one first-ever verdict per browser, deadpan.
+        if (!localStorage.getItem(FIRST_VOTE_FLAG)) { localStorage.setItem(FIRST_VOTE_FLAG, "1"); setFirstVote(true); }
+      } catch { /* private mode: no celebration, no harm */ }
+    } else removeLocalVote(nodeId);
   }
 
   useEffect(() => {
@@ -89,8 +98,13 @@ export function VoteArrows({ nodeId, citation, heading, url, keepCount, dissolve
   const score = counts.keep - counts.dissolve;
   return <div className={`${styles.arrows} ${size === "post" ? styles.arrowsPost : ""}`} data-testid={`arrows-${nodeId}`}>
     <button aria-label={`${mine === "keep" ? "Remove Keep vote from" : "Keep"} ${citation}`} data-testid={`arrow-keep-${nodeId}`} aria-pressed={mine === "keep"} className={styles.arrowUp} onClick={() => vote("keep")}>▲</button>
-    <b className={styles.score} data-vote={mine ?? undefined} title={`${counts.keep} keep · ${counts.dissolve} dissolve`}>{score.toLocaleString()}</b>
+    <b className={styles.score} data-vote={mine ?? undefined} title={mine ? `${counts.keep} keep · ${counts.dissolve} dissolve` : `${(counts.keep + counts.dissolve).toLocaleString()} verdicts — vote to see the split`}>{score.toLocaleString()}</b>
     <button aria-label={`${mine === "dissolve" ? "Remove Dissolve vote from" : "Dissolve"} ${citation}`} data-testid={`arrow-dissolve-${nodeId}`} aria-pressed={mine === "dissolve"} className={styles.arrowDown} onClick={() => vote("dissolve")}>▼</button>
     {error && <span role="alert" className={styles.arrowError}>{error}</span>}
+    {firstVote && <div className={styles.firstVoteBar} role="status" data-testid="first-vote">
+      <span>✓ your first verdict is on the record.</span>
+      <Link href={`${url}#comments`} onClick={() => setFirstVote(false)}>now read the arguments — other jurors are the good part →</Link>
+      <button type="button" aria-label="dismiss" onClick={() => setFirstVote(false)}>✕</button>
+    </div>}
   </div>;
 }

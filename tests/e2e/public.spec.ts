@@ -54,24 +54,26 @@ test("vote can change without duplicating the voter", async ({ page }) => {
   const score = arrows.locator("b");
   const totals = page.getByTestId(`vote-totals-${nodeId}`);
   const initial = Number((await score.textContent())!.replace(/,/g, ""));
-  const initialTotals = (await totals.textContent())!;
-  const initialKeep = Number(initialTotals.match(/([\d,]+) keep/)![1].replace(/,/g, ""));
-  const initialDissolve = Number(initialTotals.match(/([\d,]+) dissolve/)![1].replace(/,/g, ""));
+  // The split is earned by voting: pre-vote, only turnout is visible.
+  await expect(totals).not.toContainText("keep");
   await arrows.getByTestId(/^arrow-keep-/).click();
   await expect(arrows.getByTestId(/^arrow-keep-/)).toHaveAttribute("aria-pressed", "true");
   await expect(score).toHaveText((initial + 1).toLocaleString("en-US"));
-  await expect(totals).toContainText(`${initialKeep + 1} keep`);
-  await expect(totals).toContainText(`${initialDissolve} dissolve`);
+  await expect(totals).toContainText("keep");
+  const revealedTotals = (await totals.textContent())!;
+  const keepAfterVote = Number(revealedTotals.match(/([\d,]+) keep/)![1].replace(/,/g, ""));
+  const dissolveAfterVote = Number(revealedTotals.match(/([\d,]+) dissolve/)![1].replace(/,/g, ""));
   await arrows.getByTestId(/^arrow-dissolve-/).click();
   await expect(arrows.getByTestId(/^arrow-dissolve-/)).toHaveAttribute("aria-pressed", "true");
   await expect(score).toHaveText((initial - 1).toLocaleString("en-US"));
-  await expect(totals).toContainText(`${initialKeep} keep`);
-  await expect(totals).toContainText(`${initialDissolve + 1} dissolve`);
+  await expect(totals).toContainText(`${keepAfterVote - 1} keep`);
+  await expect(totals).toContainText(`${dissolveAfterVote + 1} dissolve`);
   await arrows.getByTestId(/^arrow-dissolve-/).click();
   await expect(arrows.getByTestId(/^arrow-dissolve-/)).toHaveAttribute("aria-pressed", "false");
   await expect(score).toHaveText(initial.toLocaleString("en-US"));
-  await expect(totals).toContainText(`${initialKeep} keep`);
-  await expect(totals).toContainText(`${initialDissolve} dissolve`);
+  // Undoing the vote keeps the split revealed — information can't be unseen.
+  await expect(totals).toContainText(`${keepAfterVote - 1} keep`);
+  await expect(totals).toContainText(`${dissolveAfterVote} dissolve`);
   await expect.poll(() => page.evaluate((id) => !JSON.parse(localStorage.getItem("everylaw:votes") ?? "{}")[id], nodeId)).toBe(true);
   await arrows.getByTestId(/^arrow-dissolve-/).click();
   await page.reload(); await expect(page.getByTestId(/^arrow-dissolve-/).first()).toHaveAttribute("aria-pressed", "true");

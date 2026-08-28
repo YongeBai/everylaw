@@ -2,6 +2,7 @@ import Link from "next/link";
 import { type RPost } from "@/lib/reddit-data";
 import { agePhrase, lawUrl, officialSourceUrl, subredditUrl } from "@/lib/reddit-format";
 import { subredditSlug } from "@/lib/title-names";
+import { TrialFlair } from "@/components/reader/trial-flair";
 import { VoteArrows } from "@/components/reader/vote-arrows";
 import { VoteLeanThumb, VoteTotals } from "@/components/reader/vote-totals";
 import styles from "@/app/(reader)/reader.module.css";
@@ -22,6 +23,7 @@ export function PostList({ posts, startRank = 1 }: { posts: RPost[]; startRank?:
             <Link href={url}>{post.citation} — {post.heading}</Link>
             <span className={styles.domain}>(<a href={officialSourceUrl(post.title, post.num)} target="_blank" rel="noopener">uscode.house.gov</a>)</span>
             {post.status !== "active" && <span className={styles.postFlair}>{post.status}</span>}
+            <TrialFlair trial={post.trial} />
           </p>
           <p className={styles.tagline}>
             submitted {agePhrase(post.enactedDate)} by {post.enactingPl ?? "Congress"} to <Link href={subredditUrl(post.title)}>r/{subredditSlug(post.title)}</Link>

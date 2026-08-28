@@ -21,7 +21,14 @@ export type RPost = {
   title: number; enactedDate: string | null; enactingPl: string | null;
   keepCount: number; dissolveCount: number;
   commentCount: number; recentVotes: number;
+  /** Latest docket appearance: an open row is today's trial, a closed row is a stamped verdict. */
+  trial: { day: string; keepCount: number; dissolveCount: number; closed: boolean } | null;
 };
+
+/** A postgres `date` may arrive as a Date or a string depending on the driver path. */
+function dateKey(value: unknown): string {
+  return value instanceof Date ? value.toISOString().slice(0, 10) : String(value);
+}
 
 function mapPost(row: Record<string, unknown>): RPost {
   return {
@@ -32,6 +39,9 @@ function mapPost(row: Record<string, unknown>): RPost {
     enactingPl: row.enacting_pl ? String(row.enacting_pl) : null,
     keepCount: Number(row.keep_count ?? 0), dissolveCount: Number(row.dissolve_count ?? 0),
     commentCount: Number(row.comment_count ?? 0), recentVotes: Number(row.recent_votes ?? 0),
+    trial: row.trial_day
+      ? { day: dateKey(row.trial_day), keepCount: Number(row.trial_keep ?? 0), dissolveCount: Number(row.trial_dissolve ?? 0), closed: Boolean(row.trial_closed) }
+      : null,
   };
 }
 
@@ -48,11 +58,13 @@ const ORDERS: Record<RSort, ReturnType<typeof sql.raw>> = {
 const POST_SELECT = sql.raw(`
   SELECT n.id, n.identifier, n.citation, n.num, n.heading, n.status, n.enacted_date, n.enacting_pl,
     ${VOTE_COLS},
-    COALESCE(t.cnt,0) comment_count, COALESCE(r.cnt,0) recent_votes
+    COALESCE(t.cnt,0) comment_count, COALESCE(r.cnt,0) recent_votes,
+    tr.trial_day, tr.trial_keep, tr.trial_dissolve, tr.trial_closed
   FROM law_nodes n
   ${VOTE_JOIN}
   LEFT JOIN LATERAL (SELECT count(*)::int cnt FROM takes WHERE node_id = n.id AND moderation_status='published') t ON true
-  LEFT JOIN LATERAL (SELECT count(*)::int cnt FROM votes WHERE node_id = n.id AND updated_at > now() - interval '7 days') r ON true`);
+  LEFT JOIN LATERAL (SELECT count(*)::int cnt FROM votes WHERE node_id = n.id AND updated_at > now() - interval '7 days') r ON true
+  LEFT JOIN LATERAL (SELECT day_key trial_day, keep_count trial_keep, dissolve_count trial_dissolve, (closed_at IS NOT NULL) trial_closed FROM trials WHERE node_id = n.id ORDER BY day_key DESC LIMIT 1) tr ON true`);
 
 export async function getRPosts(sort: RSort, titleNum?: number, limit = 25, offset = 0): Promise<RPost[]> {
   const seedList = sql.join(HOME_SEED_IDENTIFIERS.map((identifier) => sql`${identifier}`), sql`, `);

@@ -148,7 +148,7 @@ export function Comments({ nodeId, initial, title }: { nodeId: number; initial: 
   const onVoted = (id: number, up: number, down: number, myVote: 1 | -1 | null) => setComments((now) => now.map((comment) => comment.id === id ? { ...comment, upvoteCount: up, downvoteCount: down, myVote } : comment));
   const roots = childrenOf.get(null) ?? [];
 
-  return <section className={styles.comments} data-testid="comments">
+  return <section id="comments" className={styles.comments} data-testid="comments">
     <p className={styles.commentsHead}>all {comments.length} argument{comments.length === 1 ? "" : "s"} · sorted by: <b>best</b></p>
     <CommentForm nodeId={nodeId} parentId={null} onPosted={onPosted} />
     {roots.map((comment) => <CommentNode key={comment.id} comment={comment} childrenOf={childrenOf} nodeId={nodeId} title={title} onPosted={onPosted} onVoted={onVoted} />)}

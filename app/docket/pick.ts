@@ -31,6 +31,38 @@ async function trialIdForDay(key: string): Promise<number | null> {
   return idRows[0] ? Number(idRows[0].id) : null;
 }
 
+
+/**
+ * The trials ledger is the durable truth for which section stands trial on a
+ * given day: the deterministic pick shifts whenever the pool changes (new AI
+ * content, curation edits), so it runs at most once per day — the first
+ * docket render computes and records it, every later render reads the row.
+ */
+async function getOrRecordTodayTrial(todayKey: string): Promise<number | null> {
+  const stored = await db.execute(sql`SELECT node_id FROM trials WHERE day_key = ${todayKey}`);
+  if (stored[0]) return Number(stored[0].node_id);
+  const pickedId = await trialIdForDay(todayKey);
+  if (!pickedId) return null;
+  await db.execute(sql`INSERT INTO trials (day_key, node_id) VALUES (${todayKey}, ${pickedId}) ON CONFLICT (day_key) DO NOTHING`);
+  // Re-read so concurrent first renders agree on the row that won the insert.
+  const settled = await db.execute(sql`SELECT node_id FROM trials WHERE day_key = ${todayKey}`);
+  return settled[0] ? Number(settled[0].node_id) : pickedId;
+}
+
+/** Stamp final verdicts on past days from the live aggregates. */
+async function closePastTrials(todayKey: string): Promise<void> {
+  await db.execute(sql`
+    UPDATE trials SET
+      keep_count = COALESCE(v.keep_count, 0),
+      dissolve_count = COALESCE(v.dissolve_count, 0),
+      closed_at = now()
+    FROM trials t LEFT JOIN vote_aggregates v ON v.node_id = t.node_id
+    WHERE trials.day_key = t.day_key AND trials.day_key < ${todayKey} AND trials.closed_at IS NULL`);
+}
+
+
+export type YesterdayVerdict = { law: LawSummary; keepCount: number; dissolveCount: number };
+
 export type Docket = {
   law: LawSummary;
   summary: string | null;
@@ -38,15 +70,25 @@ export type Docket = {
   origin: string | null;
   takes: Awaited<ReturnType<typeof getTakes>>;
   locallyDefinedTerms: string[];
-  yesterday: LawSummary | null;
+  yesterday: YesterdayVerdict | null;
   todayKey: string;
 };
 
 export async function getDocket(): Promise<Docket | null> {
   const todayKey = dayKey();
-  const [todayId, yesterdayId] = await Promise.all([trialIdForDay(todayKey), trialIdForDay(dayKey(-1))]);
+  const todayId = await getOrRecordTodayTrial(todayKey);
   if (!todayId) return null;
-  const [law, aiContent, takes, yesterday, locallyDefinedTerms] = await Promise.all([
+  await closePastTrials(todayKey);
+  // Yesterday's recap uses the STAMPED verdict from the ledger — the numbers
+  // frozen at midnight, not live counts. Pre-ledger days have no row and no
+  // recap (recomputing against today's pool would point at the wrong section
+  // whenever the pool has changed since).
+  const yesterdayRows = await db.execute(sql`
+    SELECT node_id, keep_count, dissolve_count FROM trials
+    WHERE day_key = ${dayKey(-1)} AND closed_at IS NOT NULL`);
+  const yesterdaySnap = yesterdayRows[0] ?? null;
+  const yesterdayId = yesterdaySnap ? Number(yesterdaySnap.node_id) : null;
+  const [law, aiContent, takes, yesterdayLaw, locallyDefinedTerms] = await Promise.all([
     getLawById(todayId),
     getAiContent(todayId),
     viewerVoterHash().then((hash) => getTakes(todayId, hash)),
@@ -60,6 +102,10 @@ export async function getDocket(): Promise<Docket | null> {
     summary: aiContent.summary?.body ?? aiContent.explanation?.body ?? null,
     explanation: aiContent.explanation?.body ?? null,
     origin: aiContent.origin?.body ?? null,
-    takes, locallyDefinedTerms, yesterday, todayKey,
+    takes, locallyDefinedTerms,
+    yesterday: yesterdayLaw && yesterdaySnap
+      ? { law: yesterdayLaw, keepCount: Number(yesterdaySnap.keep_count ?? 0), dissolveCount: Number(yesterdaySnap.dissolve_count ?? 0) }
+      : null,
+    todayKey,
   };
 }

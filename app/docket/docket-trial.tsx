@@ -4,6 +4,7 @@ import { subredditSlug } from "@/lib/title-names";
 import { parseHistory } from "@/lib/history";
 import { highlightTerms } from "@/lib/terms";
 import { RHeader } from "@/components/reader/header";
+import { ShareVerdict } from "@/components/reader/share-verdict";
 import { VoteArrows } from "@/components/reader/vote-arrows";
 import { DocketVoteTally } from "@/components/reader/vote-totals";
 import { OfficialText } from "@/components/reader/official-text";
@@ -55,15 +56,17 @@ export function DocketTrial({ docket }: { docket: Docket }) {
           <div className={styles.trialVerdict}>
             <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} size="post" />
             <DocketVoteTally nodeId={law.id} keepCount={law.keepCount} dissolveCount={law.dissolveCount} />
+            <ShareVerdict nodeId={law.id} citation={law.citation} heading={law.heading} keepCount={law.keepCount} dissolveCount={law.dissolveCount} trialDate={trialDate} />
           </div>
+          <p className={styles.trialWatermark} aria-hidden>everylaw.us — the front page of the U.S. Code</p>
         </div>
       </section>
 
       {yesterday && <section className={styles.trialYesterday} data-testid="docket-yesterday">
-        <b>yesterday’s verdict:</b> <Link href={lawUrl(yesterday)}>{yesterday.citation} — {yesterday.heading}</Link>
-        {yesterday.totalCount > 0
-          ? <> · the People said <b data-dissolve={yesterday.dissolveRatio >= 0.5}>{yesterday.dissolveRatio >= 0.5 ? `DISSOLVE (${Math.round(yesterday.dissolveRatio * 100)}%)` : `KEEP (${Math.round((1 - yesterday.dissolveRatio) * 100)}%)`}</b> on {yesterday.totalCount.toLocaleString()} ballots</>
-          : <> · still open</>}
+        <b>yesterday’s verdict is in:</b> <Link href={lawUrl(yesterday.law)}>{yesterday.law.citation} — {yesterday.law.heading}</Link>
+        {yesterday.keepCount + yesterday.dissolveCount > 0
+          ? <> · the jury said <b data-dissolve={yesterday.dissolveCount > yesterday.keepCount}>{yesterday.dissolveCount > yesterday.keepCount ? `DISSOLVE (${Math.round((yesterday.dissolveCount / (yesterday.keepCount + yesterday.dissolveCount)) * 100)}%)` : `KEEP (${Math.round((yesterday.keepCount / (yesterday.keepCount + yesterday.dissolveCount)) * 100)}%)`}</b> on {(yesterday.keepCount + yesterday.dissolveCount).toLocaleString()} ballots — final</>
+          : <> · mistrial: no jurors voted</>}
       </section>}
 
       <div className={styles.trialComments}>

@@ -78,6 +78,13 @@
       "when": 1787907298762,
       "tag": "0010_citation_trgm_index",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787911817920,
+      "tag": "0011_trials",
+      "breakpoints": true
     }
   ]
 }
