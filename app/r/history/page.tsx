@@ -8,6 +8,9 @@ import styles from "../reddit.module.css";
 
 export default function HistoryPage() {
   const [votes, setVotes] = useState<LocalVote[] | null>(null);
+  // localStorage is only readable after hydration; votes===null doubles as the
+  // pre-hydration loading state, so the sync seed here is deliberate.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setVotes(Object.values(readLocalVotes()).sort((a, b) => b.ts - a.ts)); }, []);
 
   const { hottest, hottestDissent, shareText } = useMemo(() => {

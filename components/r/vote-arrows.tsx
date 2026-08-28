@@ -20,6 +20,9 @@ export function VoteArrows({ nodeId, citation, heading, url, keepCount, dissolve
     // Fast local seed for every row; on post pages also ask the server, whose
     // cookie identity outlives localStorage (fresh browser, cleared storage).
     const stored = readLocalVotes()[nodeId];
+    // localStorage is only readable after hydration; this one-time sync seed
+    // cannot move into initial state without a server/client hydration mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stored) setMine(stored.direction);
     if (size !== "post") return;
     const controller = new AbortController();

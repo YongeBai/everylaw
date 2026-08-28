@@ -15,9 +15,9 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
   const [items, setItems] = useState<Suggestion[]>([]);
 
   useEffect(() => {
-    if (query.trim().length < 2) { setItems([]); return; }
     const controller = new AbortController();
     const timer = setTimeout(async () => {
+      if (query.trim().length < 2) { setItems([]); return; }
       const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: controller.signal });
       if (response.ok) setItems((await response.json()).results);
     }, 150);
