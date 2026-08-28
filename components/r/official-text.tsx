@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { CitationText } from "@/components/r/citation-text";
 import { TERM_DEFINITIONS } from "@/lib/terms";
 import styles from "@/app/r/reddit.module.css";
 
@@ -27,20 +28,21 @@ const SCOPE_PHRASES: Record<string, string> = {
 };
 
 type CardState = { termId: number; top: number; left: number; pinned: boolean };
+type TermCardState = { term: string; top: number; left: number };
 
 /**
  * Renders official statute HTML with two layers of annotation: statutory
  * defined terms (starred; hover or click opens a card with the statute's own
  * definition, linking to the defining section and the title's wiki) and
- * curated terms of art (dotted; clicking opens the editorial note inline).
+ * curated terms of art (dotted; clicking opens an anchored editorial note).
  */
-export function OfficialText({ html, statutoryTerms = [], wikiUrl }: { html: string; statutoryTerms?: StatutoryTerm[]; wikiUrl?: string }) {
-  const [active, setActive] = useState<string | null>(null);
+export function OfficialText({ html, statutoryTerms = [], wikiUrl, title }: { html: string; statutoryTerms?: StatutoryTerm[]; wikiUrl?: string; title?: number }) {
+  const [active, setActive] = useState<TermCardState | null>(null);
   const [card, setCard] = useState<CardState | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const definition = active ? TERM_DEFINITIONS.find((entry) => entry.term.toLowerCase() === active.toLowerCase()) ?? null : null;
+  const definition = active ? TERM_DEFINITIONS.find((entry) => entry.term.toLowerCase() === active.term.toLowerCase()) ?? null : null;
   const cardTerm = card ? statutoryTerms.find((term) => term.id === card.termId) ?? null : null;
 
   function place(target: HTMLElement): { top: number; left: number } {
@@ -74,7 +76,10 @@ export function OfficialText({ html, statutoryTerms = [], wikiUrl }: { html: str
     if (starred) { toggleCard(starred); return; }
     setCard(null);
     const dotted = (event.target as HTMLElement | null)?.closest?.("[data-term]");
-    if (dotted) setActive((now) => (now === dotted.getAttribute("data-term") ? null : dotted.getAttribute("data-term")));
+    if (dotted) {
+      const term = dotted.getAttribute("data-term");
+      if (term) setActive((now) => (now?.term === term ? null : { term, ...place(dotted as HTMLElement) }));
+    }
   }
 
   function onMouseOver(event: React.MouseEvent) {
@@ -104,7 +109,7 @@ export function OfficialText({ html, statutoryTerms = [], wikiUrl }: { html: str
     {card && cardTerm && <aside className={styles.defCard} style={{ top: card.top, left: card.left }} data-testid="definition-card" role="note" onMouseEnter={cancelHide} onMouseLeave={scheduleHide}>
       <p className={styles.defCardTitle}><b>“{cardTerm.term}”</b></p>
       <p className={styles.defCardSource}>defined in <Link href={cardTerm.url}>{cardTerm.citation}{cardTerm.heading ? ` — ${cardTerm.heading}` : ""}</Link></p>
-      <p className={styles.defCardBody}>{cardTerm.definition}</p>
+      <p className={styles.defCardBody}><CitationText title={title}>{cardTerm.definition}</CitationText></p>
       <p className={styles.defCardScope}>{SCOPE_PHRASES[cardTerm.scopeType] ?? "the definition states its own reach"}</p>
       <p className={styles.defCardLinks}>
         <Link href={cardTerm.url}>read the defining section</Link>
@@ -112,11 +117,10 @@ export function OfficialText({ html, statutoryTerms = [], wikiUrl }: { html: str
         {card.pinned && <button className={styles.linkButton} onClick={() => setCard(null)}>close</button>}
       </p>
     </aside>}
-    {definition && <aside className={styles.termDef} data-testid="term-definition" role="note">
+    {definition && active && <aside className={`${styles.defCard} ${styles.termDef}`} style={{ top: active.top, left: active.left }} data-testid="term-definition" role="note" aria-live="polite">
       <b>“{definition.term}”</b>
-      <p>{definition.definition}</p>
+      <p><CitationText title={title}>{definition.definition}</CitationText></p>
       <button className={styles.linkButton} onClick={() => setActive(null)}>close</button>
     </aside>}
-    <p className={styles.termHint}>{statutoryTerms.length > 0 && "Starred terms are defined by statute — hover or click one for the definition. "}Dotted terms are terms of art — click one for its definition.</p>
   </div>;
 }

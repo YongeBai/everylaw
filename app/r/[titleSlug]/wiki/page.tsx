@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CitationText } from "@/components/r/citation-text";
 import { notFound, redirect } from "next/navigation";
 import { getTitleInfo, getTitleWikiTerms } from "@/lib/data";
 import { lawUrl, subredditUrl } from "@/lib/reddit-format";
@@ -54,7 +55,7 @@ export default async function TitleWiki({ params, searchParams }: Props) {
           <div className={styles.sectionBody}>
             {section.terms.map((entry) => <div key={entry.id} id={`term-${entry.id}`} style={{ marginBottom: 10 }}>
               <p style={{ margin: 0 }}><b>“{entry.term}”</b> <span style={{ color: "var(--muted)", fontSize: 10, fontStyle: "italic" }}>{SCOPE_LABELS[entry.scopeType] ?? ""}</span></p>
-              <p className={styles.translationBody} style={{ margin: "2px 0 0" }}>{entry.definition}</p>
+              <p className={styles.translationBody} style={{ margin: "2px 0 0" }}><CitationText title={titleNum}>{entry.definition}</CitationText></p>
             </div>)}
           </div>
         </section>)}

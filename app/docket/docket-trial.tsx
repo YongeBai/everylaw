@@ -7,6 +7,8 @@ import { RHeader } from "@/components/r/header";
 import { VoteArrows } from "@/components/r/vote-arrows";
 import { OfficialText } from "@/components/r/official-text";
 import { Comments } from "@/components/r/comments";
+import { CitationText } from "@/components/r/citation-text";
+import { linkSectionReferencesInHtml } from "@/lib/citations";
 import type { Docket } from "./pick";
 import styles from "@/app/r/reddit.module.css";
 
@@ -28,23 +30,23 @@ export function DocketTrial({ docket }: { docket: Docket }) {
           <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={subredditUrl(law.title)}>r/{subredditSlug(law.title)}</Link></p>
           <h1 className={styles.trialTitle}><Link href={url}>{law.citation} — {law.heading}</Link></h1>
           {summary
-            ? <p className={styles.trialSummary}>{summary}</p>
+            ? <p className={styles.trialSummary}><CitationText title={law.title}>{summary}</CitationText></p>
             : <p className={styles.trialSummary}>{law.bodyText.slice(0, 420)}{law.bodyText.length > 420 ? "…" : ""}</p>}
           <details className={styles.trialMore}>
             <summary data-testid="trial-show-more">show more</summary>
             {explanation && <div className={styles.section} style={{ marginTop: 10 }}>
               <div className={styles.sectionHead}>in plain english</div>
-              <div className={styles.sectionBody}><div className={styles.translationBody}>{explanation}</div></div>
+              <div className={styles.sectionBody}><div className={styles.translationBody}><CitationText title={law.title}>{explanation}</CitationText></div></div>
             </div>}
             <div className={styles.section} style={{ marginTop: 10 }}>
               <div className={styles.sectionHead}>the actual law <a href={officialSourceUrl(law.title, law.num)} target="_blank" rel="noopener">source ↗</a></div>
-              <div className={styles.sectionBody}><OfficialText html={highlightTerms(law.bodyHtml)} /></div>
+              <div className={styles.sectionBody}><OfficialText html={highlightTerms(linkSectionReferencesInHtml(law.bodyHtml, law.title))} title={law.title} /></div>
             </div>
             {(history.length > 0 || origin) && <div className={styles.section} style={{ marginTop: 10 }}>
               <div className={styles.sectionHead}>history</div>
               <div className={styles.sectionBody}>
                 {history.length > 0 && <ul className={styles.historyList}>{history.map((entry, index) => <li key={index}><b>{entry.year ?? "—"}</b><span>{entry.kind === "enacted" ? "Enacted" : "Amended"} · {entry.act}</span></li>)}</ul>}
-                {origin && <div className={styles.translationBody} style={{ marginTop: history.length ? 10 : 0 }}>{origin}</div>}
+                {origin && <div className={styles.translationBody} style={{ marginTop: history.length ? 10 : 0 }}><CitationText title={law.title}>{origin}</CitationText></div>}
               </div>
             </div>}
           </details>
@@ -69,7 +71,7 @@ export function DocketTrial({ docket }: { docket: Docket }) {
       </section>}
 
       <div className={styles.trialComments}>
-        <Comments nodeId={law.id} initial={takes} />
+        <Comments nodeId={law.id} initial={takes} title={law.title} />
       </div>
     </div>
   </div>;

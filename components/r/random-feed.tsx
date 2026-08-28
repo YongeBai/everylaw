@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { VoteArrows } from "@/components/r/vote-arrows";
+import { CitationText } from "@/components/r/citation-text";
 import { agePhrase } from "@/lib/reddit-format";
 import { subredditSlug } from "@/lib/title-names";
 import styles from "@/app/r/reddit.module.css";
@@ -87,8 +88,8 @@ export function RandomFeed() {
         <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={law.url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} size="post" />
         <div>
           {law.explanation || law.summary
-            ? <div className={styles.translationBody}>{law.explanation ?? law.summary}</div>
-            : <div className={styles.translationBody}><i style={{ color: "var(--muted)" }}>No translation yet — the section itself:</i> {law.excerpt.length >= 400 ? law.excerpt.replace(/\s+\S*$/, "") + "…" : law.excerpt}</div>}
+            ? <div className={styles.translationBody}><CitationText title={law.title}>{law.explanation ?? law.summary ?? ""}</CitationText></div>
+            : <div className={styles.translationBody}><i style={{ color: "var(--muted)" }}>No translation yet — the section itself:</i> <CitationText title={law.title}>{law.excerpt.length >= 400 ? law.excerpt.replace(/\s+\S*$/, "") + "…" : law.excerpt}</CitationText></div>}
           <p className={styles.buttons} style={{ marginTop: 8 }}>
             <Link href={law.url}>full text &amp; history</Link>
             <Link href={law.url}>arguments</Link>

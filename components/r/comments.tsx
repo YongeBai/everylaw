@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { onPostVote, type PostVote } from "@/lib/vote-sync";
+import { CitationText } from "@/components/r/citation-text";
 import styles from "@/app/r/reddit.module.css";
 
 export type RComment = { id: number; body: string; upvoteCount: number; downvoteCount: number; parentId: number | null; createdAt: string; vote: PostVote | null; mine: boolean };
@@ -45,8 +46,8 @@ function CommentForm({ nodeId, parentId, onPosted, onCancel }: { nodeId: number;
   </form>;
 }
 
-function CommentNode({ comment, childrenOf, nodeId, onPosted, onVoted }: {
-  comment: RComment; childrenOf: Map<number | null, RComment[]>; nodeId: number;
+function CommentNode({ comment, childrenOf, nodeId, title, onPosted, onVoted }: {
+  comment: RComment; childrenOf: Map<number | null, RComment[]>; nodeId: number; title?: number;
   onPosted: (comment: RComment) => void; onVoted: (id: number, up: number, down: number) => void;
 }) {
   const [replying, setReplying] = useState(false);
@@ -74,19 +75,19 @@ function CommentNode({ comment, childrenOf, nodeId, onPosted, onVoted }: {
         <span>{ago(comment.createdAt)}</span>
       </p>
       {!collapsed && <>
-        <p className={styles.commentBody}>{comment.body}</p>
+        <p className={styles.commentBody}><CitationText title={title}>{comment.body}</CitationText></p>
         <p className={styles.commentActions}>
           <button className={styles.linkButton} data-testid={`creply-${comment.id}`} onClick={() => setReplying((now) => !now)}>reply</button>
           <span className={styles.linkQuiet}>permalink</span>
         </p>
         {replying && <CommentForm nodeId={nodeId} parentId={comment.id} onPosted={onPosted} onCancel={() => setReplying(false)} />}
-        {kids.map((kid) => <CommentNode key={kid.id} comment={kid} childrenOf={childrenOf} nodeId={nodeId} onPosted={onPosted} onVoted={onVoted} />)}
+        {kids.map((kid) => <CommentNode key={kid.id} comment={kid} childrenOf={childrenOf} nodeId={nodeId} title={title} onPosted={onPosted} onVoted={onVoted} />)}
       </>}
     </div>
   </div>;
 }
 
-export function Comments({ nodeId, initial }: { nodeId: number; initial: RComment[] }) {
+export function Comments({ nodeId, initial, title }: { nodeId: number; initial: RComment[]; title?: number }) {
   const [comments, setComments] = useState<RComment[]>(initial);
 
   // When the viewer changes their vote on this law, their comments' badges follow.
@@ -113,7 +114,7 @@ export function Comments({ nodeId, initial }: { nodeId: number; initial: RCommen
   return <section className={styles.comments} data-testid="comments">
     <p className={styles.commentsHead}>all {comments.length} argument{comments.length === 1 ? "" : "s"} · sorted by: <b>best</b></p>
     <CommentForm nodeId={nodeId} parentId={null} onPosted={onPosted} />
-    {roots.map((comment) => <CommentNode key={comment.id} comment={comment} childrenOf={childrenOf} nodeId={nodeId} onPosted={onPosted} onVoted={onVoted} />)}
+    {roots.map((comment) => <CommentNode key={comment.id} comment={comment} childrenOf={childrenOf} nodeId={nodeId} title={title} onPosted={onPosted} onVoted={onVoted} />)}
     {roots.length === 0 && <p className={styles.commentsEmpty}>no arguments yet — make the first case</p>}
   </section>;
 }

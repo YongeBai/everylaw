@@ -11,6 +11,8 @@ import { RHeader } from "@/components/r/header";
 import { VoteArrows } from "@/components/r/vote-arrows";
 import { OfficialText } from "@/components/r/official-text";
 import { Comments } from "@/components/r/comments";
+import { CitationText } from "@/components/r/citation-text";
+import { linkSectionReferencesInHtml } from "@/lib/citations";
 import styles from "../../reddit.module.css";
 
 type Props = { params: Promise<{ titleSlug: string; section: string }> };
@@ -32,7 +34,7 @@ export default async function RPostPage({ params }: Props) {
   const url = lawUrl(law);
   const sourceUrl = officialSourceUrl(law.title, law.num);
   const titleWikiUrl = wikiUrl(law.title);
-  const officialHtml = highlightTerms(markDefinedTerms(law.bodyHtml, definedTerms));
+  const officialHtml = highlightTerms(markDefinedTerms(linkSectionReferencesInHtml(law.bodyHtml, law.title), definedTerms));
   // The card only needs the terms that actually got starred in this body.
   const starredTerms = definedTerms
     .filter((term) => officialHtml.includes(`data-def="${term.id}"`))
@@ -51,21 +53,21 @@ export default async function RPostPage({ params }: Props) {
             <section className={styles.section} data-testid="post-translation">
               <div className={styles.sectionHead}>in plain english<span className={styles.aiBadge}>AI-generated · not legal advice</span></div>
               <div className={styles.sectionBody}>
-                {content.summary && <p className={styles.translationBody} style={{ fontWeight: 700, marginTop: 0 }}>{content.summary.body}</p>}
+                {content.summary && <p className={styles.translationBody} style={{ fontWeight: 700, marginTop: 0 }}><CitationText title={law.title}>{content.summary.body}</CitationText></p>}
                 {content.explanation
-                  ? <div className={styles.translationBody} style={{ marginTop: content.summary ? 10 : 0 }}>{content.explanation.body}</div>
+                  ? <div className={styles.translationBody} style={{ marginTop: content.summary ? 10 : 0 }}><CitationText title={law.title}>{content.explanation.body}</CitationText></div>
                   : <p className={styles.pendingNote}>A translation hasn’t been published for this section yet. The official text below is complete and authoritative.</p>}
                 {content.facts && <div style={{ marginTop: 12, borderTop: "1px dotted var(--border-mid)", paddingTop: 10 }}>
                   <p style={{ margin: "0 0 4px", font: "700 10px Verdana, sans-serif", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>facts</p>
-                  <div className={styles.translationBody} data-testid="post-facts">{content.facts.body}</div>
+                  <div className={styles.translationBody} data-testid="post-facts"><CitationText title={law.title}>{content.facts.body}</CitationText></div>
                 </div>}
               </div>
             </section>
 
             <section className={styles.section} data-testid="post-official">
               <div className={styles.sectionHead}>the actual law <a href={sourceUrl} target="_blank" rel="noopener">source: uscode.house.gov ↗</a><span className={styles.aiBadge}>public domain</span></div>
-              <div className={styles.sectionBody}><OfficialText html={officialHtml} statutoryTerms={starredTerms} wikiUrl={titleWikiUrl} />
-                {law.sourceCredit && <p style={{ marginTop: 10, fontSize: 11, color: "var(--muted)" }}>Source credit: {law.sourceCredit}</p>}</div>
+              <div className={styles.sectionBody}><OfficialText html={officialHtml} statutoryTerms={starredTerms} wikiUrl={titleWikiUrl} title={law.title} />
+                {law.sourceCredit && <p style={{ marginTop: 10, fontSize: 11, color: "var(--muted)" }}>Source credit: <CitationText>{law.sourceCredit}</CitationText></p>}</div>
             </section>
 
             <section className={styles.section} data-testid="post-history">
@@ -73,12 +75,12 @@ export default async function RPostPage({ params }: Props) {
               <div className={styles.sectionBody}>
                 {history.length > 0 && <ul className={styles.historyList}>{history.map((entry, index) => <li key={index}><b>{entry.year ?? "—"}</b><span>{entry.kind === "enacted" ? "Enacted" : "Amended"} · {entry.act}{entry.statAtLarge ? ` · ${entry.statAtLarge}` : ""}</span></li>)}</ul>}
                 {content.origin
-                  ? <div className={styles.translationBody} style={{ marginTop: history.length ? 10 : 0 }}>{content.origin.body}</div>
+                  ? <div className={styles.translationBody} style={{ marginTop: history.length ? 10 : 0 }}><CitationText title={law.title}>{content.origin.body}</CitationText></div>
                   : <p className={styles.pendingNote} style={{ marginTop: history.length ? 10 : 0 }}>A history note hasn’t been published yet.{law.enactingPl ? ` The record shows enactment by ${law.enactingPl}${law.enactedDate ? ` on ${law.enactedDate}` : ""}.` : ""}</p>}
               </div>
             </section>
 
-            <Comments nodeId={law.id} initial={takes} />
+            <Comments nodeId={law.id} initial={takes} title={law.title} />
           </div>
         </article>
       </main>

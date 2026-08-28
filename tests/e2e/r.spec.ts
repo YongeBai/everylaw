@@ -45,6 +45,24 @@ test("a law post carries official text with term definitions, translation, and h
   await expect(page.getByTestId("post-history")).toContainText("1948");
 });
 
+test("a term-of-art definition opens beside the clicked term and stays in view", async ({ page }) => {
+  await page.goto("/r/title-18/700");
+  const term = page.getByTestId("official-text").locator('mark.law-term[data-term="whoever"]');
+  await term.click();
+
+  const definition = page.getByTestId("term-definition");
+  await expect(definition).toContainText("Statutory drafting's universal subject");
+  await expect(definition.getByRole("link", { name: "1 U.S.C. § 1" }))
+    .toHaveAttribute("href", "/r/title-1-GENERAL-PROVISIONS/1");
+  await expect.poll(async () => {
+    const [termBox, definitionBox] = await Promise.all([term.boundingBox(), definition.boundingBox()]);
+    if (!termBox || !definitionBox) return false;
+    return Math.abs(definitionBox.y - (termBox.y + termBox.height + 4)) < 2
+      && definitionBox.y >= 0
+      && definitionBox.y + definitionBox.height <= await page.evaluate(() => window.innerHeight);
+  }).toBe(true);
+});
+
 test("voting from arrows records to browser history with dissent framing", async ({ page }) => {
   await page.goto("/r/title-18/700");
   const arrows = page.getByTestId(/^arrows-\d+$/).first();
