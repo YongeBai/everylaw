@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     if (blocked.test(input.body)) return NextResponse.json({ error: "That case did not pass moderation." }, { status: 422 });
     if (input.parentId) {
       const parent = await db.execute(sql`SELECT node_id FROM takes WHERE id=${input.parentId} AND moderation_status='published'`);
-      if (!parent[0] || Number(parent[0].node_id) !== input.nodeId) return NextResponse.json({ error: "Parent comment not found on this law" }, { status: 404 });
+      if (!parent[0] || Number(parent[0].node_id) !== input.nodeId) return NextResponse.json({ error: "Parent comment not found on this section" }, { status: 404 });
     }
     const [rows, voteRows] = await Promise.all([
       db.execute(sql`INSERT INTO takes(node_id, voter_hash, body, parent_id) VALUES (${input.nodeId}, ${identity.voterHash}, ${input.body}, ${input.parentId ?? null}) RETURNING id, body, upvote_count, downvote_count, parent_id, created_at`),

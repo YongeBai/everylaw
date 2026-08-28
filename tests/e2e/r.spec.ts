@@ -53,7 +53,7 @@ test("voting from arrows records to browser history with dissent framing", async
   await page.getByTestId("r-history-link").click();
   await expect(page).toHaveURL(/\/r\/history$/);
   await expect(page.getByTestId("history-list")).toContainText("18 U.S.C. § 700");
-  await expect(page.getByTestId("history-share")).toContainText("laws judged");
+  await expect(page.getByTestId("history-share")).toContainText("sections judged");
 });
 
 test("comments carry the commenter's post vote and follow vote changes", async ({ page }) => {
@@ -119,7 +119,7 @@ test("random feed deals laws endlessly and takes votes and cases", async ({ page
   await card.getByRole("button", { name: "give your take" }).click();
   await card.locator("textarea").fill("Sampled at random and it still reads like it earns its place.");
   await card.getByRole("button", { name: "save" }).click();
-  await expect(card.getByText("your case is live on the law's page")).toBeVisible();
+  await expect(card.getByText("your case is live on the section's page")).toBeVisible();
 });
 
 test("header search suggests laws and routes into /r", async ({ page }) => {

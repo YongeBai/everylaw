@@ -18,7 +18,7 @@ export default function HistoryPage() {
     const hottest = votes.reduce((top, vote) => (dissentShare(vote) > dissentShare(top) ? vote : top));
     const hottestDissent = dissentShare(hottest);
     const kept = votes.filter((vote) => vote.direction === "keep").length;
-    const shareText = `My EveryLaw record: ${votes.length} laws judged — ${kept} kept, ${votes.length - kept} dissolved.${hottestDissent > 0.5 ? ` Hottest take: ${hottest.direction.toUpperCase()} on ${hottest.citation}, against ${Math.round(hottestDissent * 100)}% of voters.` : ""} everylaw.us`;
+    const shareText = `My EveryLaw record: ${votes.length} section${votes.length === 1 ? "" : "s"} judged — ${kept} kept, ${votes.length - kept} dissolved.${hottestDissent > 0.5 ? ` Hottest take: ${hottest.direction.toUpperCase()} on ${hottest.citation}, against ${Math.round(hottestDissent * 100)}% of voters.` : ""} everylaw.us`;
     return { hottest, hottestDissent, shareText };
   }, [votes]);
 
@@ -28,7 +28,7 @@ export default function HistoryPage() {
       <main className={styles.main}>
         <h1 className={styles.pageTitle} style={{ marginBottom: 2 }}>your record</h1>
         <p className={styles.tagline} style={{ margin: "0 4px 10px" }}>saved in this browser only, no account needed.</p>
-        {votes === null ? <p style={{ padding: 12 }}>loading…</p> : votes.length === 0 ? <p style={{ padding: 12 }} data-testid="history-empty">You haven’t judged any laws in this browser yet. <Link href="/r">Start on the front page →</Link></p> : <>
+        {votes === null ? <p style={{ padding: 12 }}>loading…</p> : votes.length === 0 ? <p style={{ padding: 12 }} data-testid="history-empty">You haven’t judged any sections in this browser yet. <Link href="/r">Start on the front page →</Link></p> : <>
           {hottest && hottestDissent > 0.5 && <div className={styles.hotTake} data-testid="hottest-take">
             <b>🔥 your hottest take:</b> you said <b>{hottest.direction}</b> on <Link href={hottest.url}>{hottest.citation}</Link> while {Math.round(hottestDissent * 100)}% of voters went the other way.
           </div>}

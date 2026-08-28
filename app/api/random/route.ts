@@ -40,6 +40,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ laws });
   } catch (error) {
     console.error("random deal failed", error);
-    return NextResponse.json({ error: "Could not deal laws" }, { status: 500 });
+    return NextResponse.json({ error: "Could not deal sections" }, { status: 500 });
   }
 }

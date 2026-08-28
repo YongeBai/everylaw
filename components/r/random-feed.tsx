@@ -23,7 +23,7 @@ function QuickTake({ nodeId }: { nodeId: number }) {
     event.preventDefault(); setMessage("");
     const response = await fetch("/api/takes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, body, website: "" }) });
     const result = await response.json();
-    if (response.ok) { setBody(""); setMessage("your case is live on the law's page"); }
+    if (response.ok) { setBody(""); setMessage("your case is live on the section's page"); }
     else setMessage(result.error || "could not post");
   }
 
@@ -55,7 +55,7 @@ export function RandomFeed() {
       for (const law of fresh) seenRef.current.add(law.id);
       setLaws((now) => [...now, ...fresh]);
     } catch {
-      setError("Could not deal more laws — try again.");
+      setError("Could not deal more sections — try again.");
     } finally {
       loadingRef.current = false; setLoading(false);
     }
@@ -88,7 +88,7 @@ export function RandomFeed() {
         <div>
           {law.explanation || law.summary
             ? <div className={styles.translationBody}>{law.explanation ?? law.summary}</div>
-            : <div className={styles.translationBody}><i style={{ color: "var(--muted)" }}>No reviewed translation yet — the law itself:</i> {law.excerpt.length >= 400 ? law.excerpt.replace(/\s+\S*$/, "") + "…" : law.excerpt}</div>}
+            : <div className={styles.translationBody}><i style={{ color: "var(--muted)" }}>No reviewed translation yet — the section itself:</i> {law.excerpt.length >= 400 ? law.excerpt.replace(/\s+\S*$/, "") + "…" : law.excerpt}</div>}
           <p className={styles.buttons} style={{ marginTop: 8 }}>
             <Link href={law.url}>full text &amp; history</Link>
             <Link href={law.url}>cases</Link>
