@@ -55,8 +55,8 @@ export default async function RPostPage({ params }: Props) {
                 {content.explanation
                   ? <div className={styles.translationBody} style={{ marginTop: content.summary ? 10 : 0 }}>{content.explanation.body}</div>
                   : <p className={styles.pendingNote}>A reviewed translation hasn’t been published for this section yet. The official text below is complete and authoritative.</p>}
-                {content.facts && <div style={{ marginTop: 12, borderTop: "1px dotted #ccc", paddingTop: 10 }}>
-                  <p style={{ margin: "0 0 4px", font: "700 10px Verdana, sans-serif", textTransform: "uppercase", letterSpacing: ".08em", color: "#888" }}>facts</p>
+                {content.facts && <div style={{ marginTop: 12, borderTop: "1px dotted var(--border-mid)", paddingTop: 10 }}>
+                  <p style={{ margin: "0 0 4px", font: "700 10px Verdana, sans-serif", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>facts</p>
                   <div className={styles.translationBody} data-testid="post-facts">{content.facts.body}</div>
                 </div>}
               </div>
@@ -65,7 +65,7 @@ export default async function RPostPage({ params }: Props) {
             <section className={styles.section} data-testid="post-official">
               <div className={styles.sectionHead}>the actual law <a href={sourceUrl} target="_blank" rel="noopener">source: uscode.house.gov ↗</a><span className={styles.aiBadge}>public domain</span></div>
               <div className={styles.sectionBody}><OfficialText html={officialHtml} statutoryTerms={starredTerms} wikiUrl={titleWikiUrl} />
-                {law.sourceCredit && <p style={{ marginTop: 10, fontSize: 11, color: "#888" }}>Source credit: {law.sourceCredit}</p>}</div>
+                {law.sourceCredit && <p style={{ marginTop: 10, fontSize: 11, color: "var(--muted)" }}>Source credit: {law.sourceCredit}</p>}</div>
             </section>
 
             <section className={styles.section} data-testid="post-history">

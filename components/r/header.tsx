@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { titleNumberFromSlug, TOPBAR_TITLES } from "@/lib/title-names";
 import { subredditUrl } from "@/lib/reddit-format";
+import { ThemeToggle } from "@/components/r/theme-toggle";
 import styles from "@/app/r/reddit.module.css";
 
 type Suggestion = { citation: string; heading: string; url: string };
@@ -43,6 +44,7 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
         <Link href="/docket">today’s trial</Link>
         <Link href="/r/random" data-testid="r-random-link">random law</Link>
         <Link href="/r/history" data-testid="r-history-link">my votes</Link>
+        <ThemeToggle />
       </nav>
     </header>
   </>;

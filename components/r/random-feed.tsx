@@ -31,7 +31,7 @@ function QuickTake({ nodeId }: { nodeId: number }) {
   return <form className={styles.commentForm} onSubmit={submit} style={{ marginBottom: 0 }}>
     <textarea data-testid={`quicktake-body-${nodeId}`} required minLength={3} maxLength={280} value={body} onChange={(event) => setBody(event.target.value)} placeholder="one claim, 280 characters (carries your vote)" />
     <div className={styles.formRow}><span>{body.length}/280</span><button data-testid={`quicktake-save-${nodeId}`} className={styles.saveButton}>save</button></div>
-    {message && <p role="status" className={styles.formError} style={{ color: "#c03500" }}>{message}</p>}
+    {message && <p role="status" className={styles.formError} style={{ color: "var(--keep-ink)" }}>{message}</p>}
   </form>;
 }
 
@@ -88,7 +88,7 @@ export function RandomFeed() {
         <div>
           {law.explanation || law.summary
             ? <div className={styles.translationBody}>{law.explanation ?? law.summary}</div>
-            : <div className={styles.translationBody}><i style={{ color: "#888" }}>No reviewed translation yet — the law itself:</i> {law.excerpt.length >= 400 ? law.excerpt.replace(/\s+\S*$/, "") + "…" : law.excerpt}</div>}
+            : <div className={styles.translationBody}><i style={{ color: "var(--muted)" }}>No reviewed translation yet — the law itself:</i> {law.excerpt.length >= 400 ? law.excerpt.replace(/\s+\S*$/, "") + "…" : law.excerpt}</div>}
           <p className={styles.buttons} style={{ marginTop: 8 }}>
             <Link href={law.url}>full text &amp; history</Link>
             <Link href={law.url}>cases</Link>
@@ -97,7 +97,7 @@ export function RandomFeed() {
         </div>
       </div>
     </article>)}
-    {error && <p role="alert" style={{ color: "#b3372b", padding: 8 }}>{error}</p>}
+    {error && <p role="alert" style={{ color: "var(--error)", padding: 8 }}>{error}</p>}
     <button ref={sentinelRef} data-testid="random-more" className={styles.saveButton} style={{ display: "block", margin: "10px auto 30px" }} onClick={() => void loadMore()} disabled={loading}>
       {loading ? "dealing…" : "more random laws"}
     </button>

@@ -1,5 +1,135 @@
 * { box-sizing: border-box; }
-html { background: #fff; color: #000; scroll-behavior: smooth; }
+
+/* Theme tokens. Light is the canonical old-reddit palette; dark is the
+   RES-night-mode analog. An explicit choice sets data-theme on <html>
+   (persisted in localStorage); with none set, the system preference wins. */
+:root {
+  color-scheme: light;
+  --bg: #fff;
+  --bg-alt: #f8f8f8;
+  --bg-box: #f6f7f8;
+  --bg-topbar: #f0f0f0;
+  --text: #000;
+  --text-soft: #555;
+  --muted: #888;
+  --muted-quiet: #bbb;
+  --faint: #c6c6c6;
+  --link: #0000c8;
+  --link-visited: #551a8b;
+  --link-soft: #369;
+  --header-bg: #cee3f8;
+  --header-border: #5f99cf;
+  --border: #d0d0d0;
+  --border-soft: #e0e0e0;
+  --border-mid: #ccc;
+  --border-faint: #e3e3e3;
+  --orangered: #ff4500;
+  --periwinkle: #9494ff;
+  --keep-ink: #c03500;
+  --dissolve-ink: #4f4fd8;
+  --keep-tint: #ffede4;
+  --dissolve-tint: #ececff;
+  --error: #b3372b;
+  --thumb-bg: #e9e2d0;
+  --thumb-fg: #7a6c4d;
+  --note-bg: #fff8df;
+  --note-border: #cdb87e;
+  --note-ink: #6b5a20;
+  --term-hover: #fff3ec;
+  --defterm-hover: #eef4fa;
+  --hover-tint: #f5faff;
+  --trial-border: #46a508;
+  --trial-bg: #e8f5d8;
+  --trial-line: #b7d792;
+  --trial-ink: #37731a;
+  --trial-soft: #4a6b33;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1a1a1b;
+  --bg-alt: #222223;
+  --bg-box: #272729;
+  --bg-topbar: #161617;
+  --text: #d7dadc;
+  --text-soft: #b8bcbf;
+  --muted: #818384;
+  --muted-quiet: #6b6d6f;
+  --faint: #565758;
+  --link: #8cb3d9;
+  --link-visited: #b3a2d0;
+  --link-soft: #7fa8cf;
+  --header-bg: #1f3247;
+  --header-border: #40608a;
+  --border: #3e4042;
+  --border-soft: #343536;
+  --border-mid: #47494b;
+  --border-faint: #2f3031;
+  --keep-ink: #ff8b60;
+  --dissolve-ink: #a9a7ff;
+  --keep-tint: #3c1f14;
+  --dissolve-tint: #232345;
+  --error: #e0776b;
+  --thumb-bg: #35301f;
+  --thumb-fg: #b5a97f;
+  --note-bg: #2b2717;
+  --note-border: #6e6135;
+  --note-ink: #d9c87e;
+  --term-hover: #3a251a;
+  --defterm-hover: #1e2c38;
+  --hover-tint: #1e2c38;
+  --trial-border: #3c8a0e;
+  --trial-bg: #1d2914;
+  --trial-line: #3e5a26;
+  --trial-ink: #8ed162;
+  --trial-soft: #86a86f;
+}
+
+/* System dark, unless the visitor explicitly chose light. Values mirror
+   :root[data-theme="dark"] above — keep the two blocks identical. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #1a1a1b;
+    --bg-alt: #222223;
+    --bg-box: #272729;
+    --bg-topbar: #161617;
+    --text: #d7dadc;
+    --text-soft: #b8bcbf;
+    --muted: #818384;
+    --muted-quiet: #6b6d6f;
+    --faint: #565758;
+    --link: #8cb3d9;
+    --link-visited: #b3a2d0;
+    --link-soft: #7fa8cf;
+    --header-bg: #1f3247;
+    --header-border: #40608a;
+    --border: #3e4042;
+    --border-soft: #343536;
+    --border-mid: #47494b;
+    --border-faint: #2f3031;
+    --keep-ink: #ff8b60;
+    --dissolve-ink: #a9a7ff;
+    --keep-tint: #3c1f14;
+    --dissolve-tint: #232345;
+    --error: #e0776b;
+    --thumb-bg: #35301f;
+    --thumb-fg: #b5a97f;
+    --note-bg: #2b2717;
+    --note-border: #6e6135;
+    --note-ink: #d9c87e;
+    --term-hover: #3a251a;
+    --defterm-hover: #1e2c38;
+    --hover-tint: #1e2c38;
+    --trial-border: #3c8a0e;
+    --trial-bg: #1d2914;
+    --trial-line: #3e5a26;
+    --trial-ink: #8ed162;
+    --trial-soft: #86a86f;
+  }
+}
+
+html { background: var(--bg); color: var(--text); scroll-behavior: smooth; }
 body { margin: 0; font-family: Verdana, Arial, Helvetica, sans-serif; }
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { font: inherit; }

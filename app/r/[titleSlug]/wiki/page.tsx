@@ -53,7 +53,7 @@ export default async function TitleWiki({ params, searchParams }: Props) {
           <div className={styles.sectionHead}><Link href={lawUrl(section)}>{section.citation}{section.heading ? ` — ${section.heading}` : ""}</Link></div>
           <div className={styles.sectionBody}>
             {section.terms.map((entry) => <div key={entry.id} id={`term-${entry.id}`} style={{ marginBottom: 10 }}>
-              <p style={{ margin: 0 }}><b>“{entry.term}”</b> <span style={{ color: "#888", fontSize: 10, fontStyle: "italic" }}>{SCOPE_LABELS[entry.scopeType] ?? ""}</span></p>
+              <p style={{ margin: 0 }}><b>“{entry.term}”</b> <span style={{ color: "var(--muted)", fontSize: 10, fontStyle: "italic" }}>{SCOPE_LABELS[entry.scopeType] ?? ""}</span></p>
               <p className={styles.translationBody} style={{ margin: "2px 0 0" }}>{entry.definition}</p>
             </div>)}
           </div>
