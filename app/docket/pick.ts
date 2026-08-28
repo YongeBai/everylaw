@@ -14,7 +14,7 @@ function pickIndexForDay(poolSize: number, key: string): number {
   return digest.readUInt32BE(0) % poolSize;
 }
 
-const DOCKET_POOL = sql.raw(`FROM law_nodes WHERE node_type = 'section' AND status = 'active' AND featured_tier >= 1`);
+const DOCKET_POOL = sql.raw(`FROM law_nodes WHERE node_type = 'section' AND status = 'active' AND EXISTS (SELECT 1 FROM ai_contents c WHERE c.node_id = law_nodes.id AND c.content_type = 'summary' AND c.status = 'published')`);
 
 async function trialIdForDay(key: string): Promise<number | null> {
   const countRows = await db.execute(sql`SELECT count(*)::int n ${DOCKET_POOL}`);

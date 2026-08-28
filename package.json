@@ -14,8 +14,7 @@
     "db:migrate": "tsx db/migrate.ts",
     "db:seed": "tsx db/seed.ts",
     "ingest": "tsx pipelines/ingest/src/cli.ts",
-    "ai:generate": "tsx pipelines/ai/src/generate.ts",
-    "ai:curate": "tsx pipelines/ai/src/curate.ts"
+    "ai:generate": "tsx pipelines/ai/src/generate.ts"
   },
   "engines": {
     "node": ">=20"

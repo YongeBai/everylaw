@@ -8,7 +8,7 @@ import { directionToVote } from "./vote-sync";
 export type LawSummary = {
   id: number; identifier: string; citation: string; num: string; heading: string;
   sortKey: string; levelPath: string | null;
-  status: string; featuredTier: number; bodyText: string; bodyHtml: string;
+  status: string; bodyText: string; bodyHtml: string;
   sourceCredit: string | null; enactingPl: string | null; enactedDate: string | null;
   wordCount: number; title: number;
   keepCount: number; dissolveCount: number; totalCount: number; dissolveRatio: number;
@@ -18,7 +18,7 @@ function mapLaw(row: Record<string, unknown>): LawSummary {
   return {
     id: Number(row.id), identifier: String(row.identifier), citation: String(row.citation), num: String(row.num), heading: String(row.heading), sortKey: String(row.sort_key),
     levelPath: row.level_path ? String(row.level_path) : null,
-    status: String(row.status), featuredTier: Number(row.featured_tier), bodyText: String(row.body_text ?? ""), bodyHtml: String(row.body_html ?? ""),
+    status: String(row.status), bodyText: String(row.body_text ?? ""), bodyHtml: String(row.body_html ?? ""),
     sourceCredit: row.source_credit ? String(row.source_credit) : null, enactingPl: row.enacting_pl ? String(row.enacting_pl) : null,
     enactedDate: row.enacted_date ? String(row.enacted_date) : null, wordCount: Number(row.word_count),
     title: titleFromIdentifier(String(row.identifier)), keepCount: Number(row.keep_count ?? 0),
@@ -34,7 +34,7 @@ export const VOTE_COLS = `COALESCE(v.keep_count,0) keep_count, COALESCE(v.dissol
 const lawSelect = sql.raw(`SELECT n.*, ${VOTE_COLS} FROM law_nodes n ${VOTE_JOIN}`);
 /** List row without body_text/body_html — bodies are megabytes at list scale. */
 const lawSelectLite = sql.raw(`
-  SELECT n.id, n.identifier, n.citation, n.num, n.heading, n.sort_key, n.status, n.featured_tier,
+  SELECT n.id, n.identifier, n.citation, n.num, n.heading, n.sort_key, n.status,
     n.source_credit, n.enacting_pl, n.enacted_date, n.word_count, ${VOTE_COLS}
   FROM law_nodes n ${VOTE_JOIN}
 `);
@@ -70,8 +70,9 @@ export async function getLawLiteById(id: number): Promise<LawSummary | null> {
   return rows[0] ? mapLaw(rows[0]) : null;
 }
 
+/** Sections with a published translation — the pool grows as coverage grows. */
 export async function getFeatured(limit = 12): Promise<LawSummary[]> {
-  const rows = await db.execute(sql`${lawSelectLite} WHERE n.node_type='section' AND n.featured_tier >= 1 ORDER BY n.featured_tier DESC, v.total_count DESC NULLS LAST, n.sort_key LIMIT ${limit}`);
+  const rows = await db.execute(sql`${lawSelectLite} WHERE n.node_type='section' AND EXISTS (SELECT 1 FROM ai_contents c WHERE c.node_id = n.id AND c.content_type = 'summary' AND c.status = 'published') ORDER BY v.total_count DESC NULLS LAST, n.sort_key LIMIT ${limit}`);
   return rows.map(mapLaw);
 }
 
@@ -221,7 +222,7 @@ export async function getLawNavigation(law: LawSummary) {
   const [previousRows, nextRows, relatedRows] = await Promise.all([
     db.execute(sql`${lawSelectLite} WHERE n.node_type='section' AND n.identifier LIKE ${prefix} AND n.sort_key < ${law.sortKey} ORDER BY n.sort_key DESC LIMIT 1`),
     db.execute(sql`${lawSelectLite} WHERE n.node_type='section' AND n.identifier LIKE ${prefix} AND n.sort_key > ${law.sortKey} ORDER BY n.sort_key ASC LIMIT 1`),
-    db.execute(sql`${lawSelectLite} WHERE n.node_type='section' AND n.identifier LIKE ${prefix} AND n.id<>${law.id} ORDER BY similarity(n.heading, ${law.heading}) DESC, n.featured_tier DESC LIMIT 3`),
+    db.execute(sql`${lawSelectLite} WHERE n.node_type='section' AND n.identifier LIKE ${prefix} AND n.id<>${law.id} ORDER BY similarity(n.heading, ${law.heading}) DESC LIMIT 3`),
   ]);
   const previous = previousRows[0] ? mapLaw(previousRows[0]) : null;
   const next = nextRows[0] ? mapLaw(nextRows[0]) : null;

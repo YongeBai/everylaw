@@ -6,23 +6,26 @@ import { db, sqlClient } from "@/db";
 import { deterministicContent, lintContent, type ContentType, type LawInput } from "./content.js";
 
 const options = new Command()
-  .option("--tier <number>", "featured tier", "2")
   .option("--limit <number>", "law limit", "1000")
   .option("--provider <provider>", "local or anthropic", "local")
   .option("--type <type>", "generate only summary, explanation, origin, or facts")
   .option("--publish", "publish instead of creating drafts")
-  .parse().opts<{ tier: string; limit: string; provider: "local"|"anthropic"; type?: string; publish?: boolean }>();
+  .parse().opts<{ limit: string; provider: "local"|"anthropic"; type?: string; publish?: boolean }>();
 const validTypes: ContentType[] = ["summary", "explanation", "origin", "facts"];
 if (!(["local", "anthropic"] as const).includes(options.provider)) throw new Error(`Invalid provider: ${options.provider}`);
-const tier = Number(options.tier);
 const limit = Number(options.limit);
-if (!Number.isInteger(tier) || tier < 0 || tier > 2) throw new Error(`Invalid tier: ${options.tier}`);
 if (!Number.isInteger(limit) || limit < 1) throw new Error(`Invalid limit: ${options.limit}`);
 // Keep these explicit so every generated row records the prompt file used.
 const promptVersions: Record<ContentType, string> = { summary: "v2", explanation: "v3", origin: "v2", facts: "v1" };
 if (options.type && !validTypes.includes(options.type as ContentType)) throw new Error(`Invalid content type: ${options.type}`);
-const types: ContentType[] = options.type ? [options.type as ContentType] : tier >= 2 ? validTypes : ["summary"];
-const rows = await db.execute(sql`SELECT id, citation, heading, body_text, source_credit, enacting_pl, enacted_date, word_count, amendment_count FROM law_nodes WHERE node_type='section' AND featured_tier >= ${tier} ORDER BY sort_key LIMIT ${limit}`);
+const types: ContentType[] = options.type ? [options.type as ContentType] : validTypes;
+// Any translatable section not yet covered — no featured-tier gating.
+const rows = await db.execute(sql`
+  SELECT id, citation, heading, body_text, source_credit, enacting_pl, enacted_date, word_count, amendment_count
+  FROM law_nodes n
+  WHERE node_type='section' AND length(trim(body_text)) >= 10
+    AND NOT EXISTS (SELECT 1 FROM ai_contents c WHERE c.node_id = n.id AND c.content_type = 'explanation' AND c.status = 'published')
+  ORDER BY sort_key LIMIT ${limit}`);
 
 type Generated = { body: string; model: string; input: number; output: number; truncated?: boolean };
 
