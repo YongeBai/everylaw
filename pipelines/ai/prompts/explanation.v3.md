@@ -7,7 +7,7 @@ Write for a smart 13-year-old — a true 8th-grade reading level. That means:
 - Active voice with a named actor: "The Secretary must pay Puerto Rico", not "payments shall be made".
 - No sentence should need to be read twice.
 
-Mirror the section's structure. If it has lettered or numbered subsections, keep the labels — "(a) …", "(b) …" — so a reader can move between your translation and the official text. If it is one undivided provision, use short paragraphs. On a long, deeply nested section, priorities are: (1) cover every top-level lettered subsection accurately, (2) keep the top-level labels, (3) merge deeply nested paragraphs into plain prose without their inner labels. Accuracy of scope always beats structural completeness. For a long list of similar items (like a definitions section), you may group minor entries in one sentence each, but never silently drop one.
+Mirror the section's structure. If it has lettered or numbered subsections, keep the labels — "(a) …", "(b) …" — so a reader can move between your translation and the official text. If it is one undivided provision, use short paragraphs. On a long, deeply nested section: cover every top-level lettered subsection with its label, and translate nested paragraphs in plain prose — you may fold their inner labels into the prose, but never drop a substantive provision, qualifier, or exception to save space. For a long list of similar items (like a definitions section), give each entry its own plain-English rendering; group entries only when they genuinely share one rule.
 
 The source text may contain stray artifacts — orphaned footnote digits, odd spacing. Ignore them; do not reproduce or mention them.
 
@@ -15,4 +15,4 @@ Cover what the text actually provides: who the section applies to, what they mus
 
 Formulas and dollar amounts: never transcribe a formula in one sentence. Walk through it in steps. "Start with X. Subtract Y. The payment is the smaller of that result or Z."
 
-120–380 words. Return only the translation: no title, no preface, no closing disclaimer, no legal advice, nothing you were not asked for.
+There is no word limit. Length should scale with the statute: a short section deserves 120–250 words; a long one takes whatever a complete, faithful translation needs. Never drop substance to be brief — but never pad, repeat, or editorialize either. Return only the translation: no title, no preface, no closing disclaimer, no legal advice, nothing you were not asked for.
