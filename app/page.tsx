@@ -26,7 +26,6 @@ export default async function FrontPage({ searchParams }: { searchParams: Promis
           <p><b>The law never gets a spring cleaning.</b> Read every federal law in plain English, see its real history, and signal keep or dissolve.</p>
           <div className={styles.sideStat}><span>sections in force</span><b>{stats.sectionsInForce.toLocaleString()}</b></div>
           <div className={styles.sideStat}><span>titles</span><b>{stats.titles}</b></div>
-          <div className={styles.sideStat}><span>accounts required</span><b>none</b></div>
         </div></div>
         <div className={styles.sideBox}><h2>today’s trial</h2><div className={styles.sideBoxBody}>
           <p>One section stands trial every day. New trial at midnight Pacific.</p>
