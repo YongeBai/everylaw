@@ -17,10 +17,10 @@ export async function POST(request: NextRequest) {
       recordInteraction("take-vote", identity),
       db.execute(sql`SELECT upvote_count, downvote_count FROM takes WHERE id=${takeId}`),
     ]);
-    if (!rows[0]) return NextResponse.json({ error: "Case not found" }, { status: 404 });
+    if (!rows[0]) return NextResponse.json({ error: "Argument not found" }, { status: 404 });
     return NextResponse.json({ upvoteCount: Number(rows[0].upvote_count), downvoteCount: Number(rows[0].downvote_count) });
   } catch (error) {
-    if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid case" }, { status: 400 });
+    if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid argument" }, { status: 400 });
     console.error("take upvote failed", error); return NextResponse.json({ error: "Could not upvote" }, { status: 500 });
   }
 }

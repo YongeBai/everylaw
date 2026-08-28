@@ -20,7 +20,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       <main className={styles.main}>
         <h1 className={styles.pageTitle} data-testid="search-title">{query ? <>search results for “{query}”</> : "search"}</h1>
         {!query && <p style={{ padding: "4px", color: "var(--muted)" }}>Type a citation, a phrase, or a headline into the search box above.</p>}
-        {query && results.length === 0 && <p style={{ padding: "4px", color: "var(--muted)" }} data-testid="search-empty">No matching section yet. Try a shorter phrase or citation.</p>}
+        {query && results.length === 0 && <p style={{ padding: "4px", color: "var(--muted)" }} data-testid="search-empty">No matching section. Try a shorter phrase or citation.</p>}
         {results.length > 0 && <div data-testid="search-results">
           {results.map((law, index) => {
             const url = lawUrl(law);

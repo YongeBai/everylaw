@@ -29,8 +29,8 @@ export default async function FrontPage({ searchParams }: { searchParams: Promis
           <div className={styles.sideStat}><span>accounts required</span><b>none</b></div>
         </div></div>
         <div className={styles.sideBox}><h2>today’s trial</h2><div className={styles.sideBoxBody}>
-          <p>One section stands trial every day. New trial at midnight PST.</p>
-          <p><Link href="/docket">Take the stand →</Link></p>
+          <p>One section stands trial every day. New trial at midnight Pacific.</p>
+          <p><Link href="/docket">Join the jury →</Link></p>
         </div></div>
         <div className={styles.sideBox}><h2>random section</h2><div className={styles.sideBoxBody}>
           <p>An endless stack from all {stats.sectionsInForce.toLocaleString()} sections in force.</p>
@@ -38,6 +38,6 @@ export default async function FrontPage({ searchParams }: { searchParams: Promis
         </div></div>
       </aside>
     </div>
-    <footer className={styles.footer}>Official text is public domain. AI translations are reviewed and are not legal advice.</footer>
+    <footer className={styles.footer}>Official text is public domain. Translations are AI-generated and are not legal advice.</footer>
   </div>;
 }

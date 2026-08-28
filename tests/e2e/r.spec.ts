@@ -119,7 +119,7 @@ test("random feed deals laws endlessly and takes votes and cases", async ({ page
   await card.getByRole("button", { name: "give your take" }).click();
   await card.locator("textarea").fill("Sampled at random and it still reads like it earns its place.");
   await card.getByRole("button", { name: "save" }).click();
-  await expect(card.getByText("your case is live on the section's page")).toBeVisible();
+  await expect(card.getByText("your argument is live on the section's page")).toBeVisible();
 });
 
 test("header search suggests laws and routes into /r", async ({ page }) => {

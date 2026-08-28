@@ -23,7 +23,7 @@ export function DocketTrial({ docket }: { docket: Docket }) {
     <RHeader />
     <div className={styles.trialStage}>
       <section className={styles.trialBox} data-testid="docket-trial">
-        <div className={styles.trialSticky}>⚖ {trialDate} trial<span className={styles.trialStickyRight}>new section is up for trial at midnight PST</span></div>
+        <div className={styles.trialSticky}>⚖ {trialDate} trial<span className={styles.trialStickyRight}>new section is up for trial at midnight Pacific</span></div>
         <div className={styles.trialInner}>
           <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={subredditUrl(law.title)}>r/{subredditSlug(law.title)}</Link></p>
           <h1 className={styles.trialTitle}><Link href={url}>{law.citation} — {law.heading}</Link></h1>

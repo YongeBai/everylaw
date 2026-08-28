@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     if (!isSameOrigin(request)) return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
     const input = schema.parse(await request.json()); const identity = requestIdentity(request);
     if (!await checkRateLimit("take", identity)) return NextResponse.json({ error: "Take limit reached. Try again later." }, { status: 429 });
-    if (blocked.test(input.body)) return NextResponse.json({ error: "That case did not pass moderation." }, { status: 422 });
+    if (blocked.test(input.body)) return NextResponse.json({ error: "That argument did not pass moderation." }, { status: 422 });
     if (input.parentId) {
       const parent = await db.execute(sql`SELECT node_id FROM takes WHERE id=${input.parentId} AND moderation_status='published'`);
       if (!parent[0] || Number(parent[0].node_id) !== input.nodeId) return NextResponse.json({ error: "Parent comment not found on this section" }, { status: 404 });
@@ -29,6 +29,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ take: { id: Number(row.id), body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count), parentId: row.parent_id === null ? null : Number(row.parent_id), createdAt: String(row.created_at), vote: directionToVote(direction === null || direction === undefined ? null : String(direction)), mine: true } }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Use 3–280 characters." }, { status: 400 });
-    console.error("take failed", error); return NextResponse.json({ error: "Could not publish the case" }, { status: 500 });
+    console.error("take failed", error); return NextResponse.json({ error: "Could not publish your argument" }, { status: 500 });
   }
 }

@@ -38,7 +38,7 @@ export function PostList({ posts, startRank = 1 }: { posts: RPost[]; startRank?:
             {voteTotal > 0 && <> · <span className={styles.keepInk}>{post.keepCount} keep</span> · <span className={styles.dissolveInk}>{post.dissolveCount} dissolve</span></>}
             {post.recentVotes > 0 && <> · {post.recentVotes} vote{post.recentVotes === 1 ? "" : "s"} this week</>}
           </p>
-          <p className={styles.buttons}><Link href={url}>{post.commentCount} case{post.commentCount === 1 ? "" : "s"}</Link><Link href={url}>read the section</Link><span>share</span></p>
+          <p className={styles.buttons}><Link href={url}>{post.commentCount} argument{post.commentCount === 1 ? "" : "s"}</Link><Link href={url}>read the section</Link><span>share</span></p>
         </div>
       </article>;
     })}

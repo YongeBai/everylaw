@@ -12,7 +12,7 @@ test("browse and law reading flows", async ({ page }) => {
   await expect(page.getByTestId("subreddit-pages")).toContainText(/page 2 of/);
   await page.goto("/r/title-18/700");
   await expect(page.getByRole("heading", { name: /Desecration of the flag/ })).toBeVisible();
-  await expect(page.getByText("AI-assisted · reviewed · not legal advice").first()).toBeVisible();
+  await expect(page.getByText("AI-generated · not legal advice").first()).toBeVisible();
   await expect(page.getByText(/Whoever knowingly mutilates/)).toBeVisible();
   await expect(page.getByTestId("post-history")).toContainText("Enacted");
   await page.goto("/search?q=margarine");

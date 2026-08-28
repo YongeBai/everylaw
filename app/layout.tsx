@@ -5,7 +5,7 @@ import "./globals.css";
 const DESCRIPTION = "Read every federal law in plain English. See its history and why it exists, then vote to keep or dissolve — and make the strongest case on either side.";
 
 export const metadata: Metadata = {
-  title: { default: "EveryLaw — What should survive?", template: "%s | EveryLaw" },
+  title: { default: "EveryLaw — the front page of the U.S. Code", template: "%s | EveryLaw" },
   description: DESCRIPTION,
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"),
   openGraph: {

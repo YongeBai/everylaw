@@ -49,12 +49,12 @@ export default async function RPostPage({ params }: Props) {
             <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={subredditUrl(law.title)}>r/{subredditSlug(law.title)}</Link> · {law.wordCount.toLocaleString()} words · {law.keepCount} keep · {law.dissolveCount} dissolve</p>
 
             <section className={styles.section} data-testid="post-translation">
-              <div className={styles.sectionHead}>in plain english<span className={styles.aiBadge}>AI-assisted · reviewed · not legal advice</span></div>
+              <div className={styles.sectionHead}>in plain english<span className={styles.aiBadge}>AI-generated · not legal advice</span></div>
               <div className={styles.sectionBody}>
                 {content.summary && <p className={styles.translationBody} style={{ fontWeight: 700, marginTop: 0 }}>{content.summary.body}</p>}
                 {content.explanation
                   ? <div className={styles.translationBody} style={{ marginTop: content.summary ? 10 : 0 }}>{content.explanation.body}</div>
-                  : <p className={styles.pendingNote}>A reviewed translation hasn’t been published for this section yet. The official text below is complete and authoritative.</p>}
+                  : <p className={styles.pendingNote}>A translation hasn’t been published for this section yet. The official text below is complete and authoritative.</p>}
                 {content.facts && <div style={{ marginTop: 12, borderTop: "1px dotted var(--border-mid)", paddingTop: 10 }}>
                   <p style={{ margin: "0 0 4px", font: "700 10px Verdana, sans-serif", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>facts</p>
                   <div className={styles.translationBody} data-testid="post-facts">{content.facts.body}</div>
@@ -74,7 +74,7 @@ export default async function RPostPage({ params }: Props) {
                 {history.length > 0 && <ul className={styles.historyList}>{history.map((entry, index) => <li key={index}><b>{entry.year ?? "—"}</b><span>{entry.kind === "enacted" ? "Enacted" : "Amended"} · {entry.act}{entry.statAtLarge ? ` · ${entry.statAtLarge}` : ""}</span></li>)}</ul>}
                 {content.origin
                   ? <div className={styles.translationBody} style={{ marginTop: history.length ? 10 : 0 }}>{content.origin.body}</div>
-                  : <p className={styles.pendingNote} style={{ marginTop: history.length ? 10 : 0 }}>A reviewed history note hasn’t been published yet.{law.enactingPl ? ` The record shows enactment by ${law.enactingPl}${law.enactedDate ? ` on ${law.enactedDate}` : ""}.` : ""}</p>}
+                  : <p className={styles.pendingNote} style={{ marginTop: history.length ? 10 : 0 }}>A history note hasn’t been published yet.{law.enactingPl ? ` The record shows enactment by ${law.enactingPl}${law.enactedDate ? ` on ${law.enactedDate}` : ""}.` : ""}</p>}
               </div>
             </section>
 
@@ -100,6 +100,6 @@ export default async function RPostPage({ params }: Props) {
         </div></div>
       </aside>
     </div>
-    <footer className={styles.footer}>Official text is public domain. AI translations are reviewed and are not legal advice.</footer>
+    <footer className={styles.footer}>Official text is public domain. Translations are AI-generated and are not legal advice.</footer>
   </div>;
 }

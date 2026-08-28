@@ -40,7 +40,7 @@ export default function OpenGraphImage() {
           </div>
         ))}
       </div>
-      <div style={{ display: "flex", padding: "14px 28px", borderTop: "2px solid #e0e0e0", color: "#888", fontSize: 19 }}>What should survive? · everylaw</div>
+      <div style={{ display: "flex", padding: "14px 28px", borderTop: "2px solid #e0e0e0", color: "#888", fontSize: 19 }}>the front page of the U.S. Code · everylaw</div>
     </div>,
     size,
   );

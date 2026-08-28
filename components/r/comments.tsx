@@ -111,9 +111,9 @@ export function Comments({ nodeId, initial }: { nodeId: number; initial: RCommen
   const roots = childrenOf.get(null) ?? [];
 
   return <section className={styles.comments} data-testid="comments">
-    <p className={styles.commentsHead}>all {comments.length} case{comments.length === 1 ? "" : "s"} · sorted by: <b>best</b></p>
+    <p className={styles.commentsHead}>all {comments.length} argument{comments.length === 1 ? "" : "s"} · sorted by: <b>best</b></p>
     <CommentForm nodeId={nodeId} parentId={null} onPosted={onPosted} />
     {roots.map((comment) => <CommentNode key={comment.id} comment={comment} childrenOf={childrenOf} nodeId={nodeId} onPosted={onPosted} onVoted={onVoted} />)}
-    {roots.length === 0 && <p className={styles.commentsEmpty}>no cases yet — make the first one</p>}
+    {roots.length === 0 && <p className={styles.commentsEmpty}>no arguments yet — make the first case</p>}
   </section>;
 }

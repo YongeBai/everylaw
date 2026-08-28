@@ -4,7 +4,7 @@ test("today's trial tries one law and accepts a verdict", async ({ page }) => {
   await page.goto("/docket");
   const trialBox = page.getByTestId("docket-trial");
   await expect(trialBox).toContainText(/\d{4} trial/);
-  await expect(trialBox).toContainText("midnight PST");
+  await expect(trialBox).toContainText("midnight Pacific");
   await expect(trialBox).toContainText("jurors so far");
   await page.getByTestId("trial-show-more").click();
   await expect(trialBox).toContainText("the actual law");
