@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { db } from "@everylaw/db";
+import { db } from "@/db";
 import { VOTE_COLS, VOTE_JOIN } from "@/lib/data";
 import { titleFromIdentifier } from "@/lib/reddit-format";
 

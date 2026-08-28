@@ -1,7 +1,7 @@
-import "dotenv/config";
+import "./env.js";
 import { Command } from "commander";
 import { sql } from "drizzle-orm";
-import { db, sqlClient } from "@everylaw/db";
+import { db, sqlClient } from "@/db";
 
 const options = new Command().option("--limit <number>", "candidate count", "2500").option("--apply", "mark top candidates tier 2").parse().opts<{ limit: string; apply?: boolean }>();
 const rows = await db.execute(sql`

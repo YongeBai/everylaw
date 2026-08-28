@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
-import { db } from "@everylaw/db";
+import { db } from "@/db";
 import { getAiContent, getLawById, getLawLiteById, getTakes, type LawSummary } from "@/lib/data";
 import { viewerVoterHash } from "@/lib/viewer";
 

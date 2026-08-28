@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { db } from "@everylaw/db";
+import { db } from "@/db";
 
 type Identity = { voterHash: string; ipHash: string };
 const limits = { vote: 30, take: 5, "take-vote": 60 } as const;

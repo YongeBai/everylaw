@@ -1,27 +1,50 @@
 {
   "name": "everylaw",
+  "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "packages/*",
-    "apps/*",
-    "pipelines/*"
-  ],
+  "type": "module",
   "scripts": {
-    "dev": "npm run dev -w apps/web",
-    "build": "npm run build -w apps/web",
-    "db:generate": "npm run generate -w packages/db",
-    "db:migrate": "npm run migrate -w packages/db",
-    "db:seed": "npm run seed -w packages/db",
-    "lint": "npm run lint -w apps/web",
-    "ingest": "npm run ingest -w pipelines/ingest --",
-    "typecheck": "tsc -b packages/db pipelines/ingest pipelines/ai && npm run typecheck -w apps/web",
-    "test": "npm run test -w apps/web && npm run test -w pipelines/ingest && npm run test -w pipelines/ai",
-    "test:e2e": "playwright test"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx db/migrate.ts",
+    "db:seed": "tsx db/seed.ts",
+    "ingest": "tsx pipelines/ingest/src/cli.ts",
+    "ai:generate": "tsx pipelines/ai/src/generate.ts",
+    "ai:curate": "tsx pipelines/ai/src/curate.ts"
   },
   "engines": {
     "node": ">=20"
   },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
+    "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.35.3",
+    "commander": "^14.0.0",
+    "dotenv": "^17.2.1",
+    "drizzle-orm": "^0.45.2",
+    "next": "^16.0.0",
+    "postgres": "^3.4.5",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "saxes": "^6.0.0",
+    "zod": "^4.1.3"
+  },
   "devDependencies": {
-    "@playwright/test": "^1.62.1"
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^24.3.0",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9.34.0",
+    "eslint-config-next": "^16.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.11"
   }
 }

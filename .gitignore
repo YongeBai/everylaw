@@ -2,10 +2,10 @@ node_modules/
 .next/
 .env
 .env.local
+.env.pipelines
 *.tsbuildinfo
 pipelines/ingest/.cache/
 pipelines/ai/.cache/
-dist/
 pipelines/ingest/data/
 playwright-report/
 test-results/

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
-import { db } from "@everylaw/db";
+import { db } from "@/db";
 import { isSameOrigin, requestIdentity } from "@/lib/security";
 import { checkRateLimit, recordInteraction } from "@/lib/rate-limit";
 

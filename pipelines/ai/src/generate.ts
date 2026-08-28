@@ -1,8 +1,8 @@
-import "dotenv/config";
+import "./env.js";
 import { readFile } from "node:fs/promises";
 import { Command } from "commander";
 import { sql } from "drizzle-orm";
-import { db, sqlClient } from "@everylaw/db";
+import { db, sqlClient } from "@/db";
 import { deterministicContent, lintContent, type ContentType, type LawInput } from "./content.js";
 
 const options = new Command()

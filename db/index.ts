@@ -1,8 +1,8 @@
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import * as schema from '@everylaw/db/schema';
+import * as schema from './schema';
 
-export * from '@everylaw/db/schema';
+export * from './schema';
 export { schema };
 
 export type Db = PostgresJsDatabase<typeof schema>;

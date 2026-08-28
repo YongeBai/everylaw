@@ -22,14 +22,14 @@ ALLOW_DEMO_SEED=true npm run db:seed
 For the official corpus through Public Law 119-102 (downloads and caches the ~400 MB OLRC zip on first run):
 
 ```bash
-npm run ingest -w @everylaw/ingest -- run --release 119-102
+npm run ingest -- run --release 119-102
 ```
 
 The full ingest is streaming and idempotent. Appendices and court-rule bundles are excluded. To ingest from an already-extracted directory of `uscNN.xml` files (faster; also used for partial runs):
 
 ```bash
-npm run ingest -w @everylaw/ingest -- run --release 119-102 --directory data/uslm-all
-npm run ingest -w @everylaw/ingest -- run --release 119-102 --directory data/uslm-all --titles 18,26
+npm run ingest -- run --release 119-102 --directory pipelines/ingest/data/uslm-all
+npm run ingest -- run --release 119-102 --directory pipelines/ingest/data/uslm-all --titles 18,26
 ```
 
 After any ingest, apply the curation seed (tags, browse categories, starter featured tiers — idempotent):
@@ -51,15 +51,15 @@ Open `http://localhost:3000`. The default local review password from `.env` is `
 Local deterministic content exercises the complete generation/review flow without external credentials:
 
 ```bash
-npm run generate -w @everylaw/ai -- --tier 2 --limit 4
+npm run ai:generate -- --tier 2 --limit 4
 ```
 
-For Anthropic generation, set `ANTHROPIC_API_KEY`, then pass `--provider anthropic`. The pipeline defaults to `claude-sonnet-5`; set `ANTHROPIC_MODEL` to override it. Generated content is draft by default. Review and publish it with `ops/publish-ai-batch.sql`; only published versions render. Use `--type summary|explanation|origin|facts` to retry one content type without duplicating accepted drafts. `--publish` is intended for trusted local fixtures or the tier-1 auto-publish workflow.
+For Anthropic generation, set `ANTHROPIC_API_KEY` in `.env.pipelines` (see `.env.pipelines.example`; kept out of `.env` so Next never loads it), then pass `--provider anthropic`. The pipeline defaults to `claude-sonnet-5`; set `ANTHROPIC_MODEL` to override it. Generated content is draft by default. Review and publish it with `ops/publish-ai-batch.sql`; only published versions render. Use `--type summary|explanation|origin|facts` to retry one content type without duplicating accepted drafts. `--publish` is intended for trusted local fixtures or the tier-1 auto-publish workflow.
 
 Candidate ranking is available through:
 
 ```bash
-npm run curate -w @everylaw/ai -- --limit 2500
+npm run ai:curate -- --limit 2500
 ```
 
 ## Verification

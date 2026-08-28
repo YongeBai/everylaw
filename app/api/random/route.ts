@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
-import { db } from "@everylaw/db";
+import { db } from "@/db";
 import { lawUrl, titleFromIdentifier } from "@/lib/reddit-format";
 
 /** Deal a batch of random in-force sections for the infinite review feed. */

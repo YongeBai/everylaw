@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { sql } from "drizzle-orm";
-import { db } from "@everylaw/db";
+import { db } from "@/db";
 import { parseSectionParam, titleFromIdentifier } from "./reddit-format";
 import { titleNumberFromSlug } from "./title-names";
 import { directionToVote } from "./vote-sync";

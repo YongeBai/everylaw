@@ -122,7 +122,7 @@ export function parseSourceCredit(credit: string | null): SourceCreditInfo {
   // Pub. L. 98-473, …)"), so the enacting act and date come from the first
   // segment — a later Pub. L. is an amendment, not the origin.
   const firstSegment = normalized.replace(/^\(/, '').split(';')[0];
-  let enactingPl: string | null =
+  const enactingPl: string | null =
     firstSegment.match(/Pub\.\s*L\.\s*\d+-\d+/)?.[0]?.replace(/\s+/g, ' ') ??
     firstSegment.match(/ch\.\s*\d+/)?.[0]?.replace(/\s+/g, ' ') ??
     plMatches[0]?.replace(/\s+/g, ' ') ?? null;
