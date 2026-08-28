@@ -5,8 +5,15 @@ import { subredditSlug } from "@/lib/title-names";
 import { VoteArrows } from "@/components/r/vote-arrows";
 import styles from "@/app/r/reddit.module.css";
 
-// Golden-angle spread keeps neighboring titles' book-spine tints distinct.
-const thumbHue = (title: number) => Math.round(title * 137.5) % 360;
+// A thumb only takes a vote color once the crowd has actually leaned (60/40
+// on 3+ votes) — color always means keep/dissolve, never decoration.
+function verdictLean(keep: number, dissolve: number): "keep" | "dissolve" | undefined {
+  const total = keep + dissolve;
+  if (total < 3) return undefined;
+  if (keep / total >= 0.6) return "keep";
+  if (dissolve / total >= 0.6) return "dissolve";
+  return undefined;
+}
 
 export function PostList({ posts, startRank = 1 }: { posts: RPost[]; startRank?: number }) {
   if (posts.length === 0) return <p style={{ padding: 12, color: "var(--muted)" }}>Nothing here yet — be the first to judge a law in this title.</p>;
@@ -19,7 +26,7 @@ export function PostList({ posts, startRank = 1 }: { posts: RPost[]; startRank?:
           <span className={styles.rank}>{startRank + index}</span>
           <VoteArrows nodeId={post.id} citation={post.citation} heading={post.heading} url={url} keepCount={post.keepCount} dissolveCount={post.dissolveCount} />
         </div>
-        <span className={styles.thumb} style={{ "--thumb-hue": thumbHue(post.title) } as React.CSSProperties} aria-hidden>{post.title}</span>
+        <span className={styles.thumb} data-lean={verdictLean(post.keepCount, post.dissolveCount)} aria-hidden>{post.title}</span>
         <div className={styles.entry}>
           <p className={styles.postTitle}>
             <Link href={url}>{post.citation} — {post.heading}</Link>

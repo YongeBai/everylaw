@@ -37,9 +37,11 @@
 .thing { display: grid; grid-template-columns: 64px 44px minmax(0, 1fr); gap: 8px; padding: 5px 4px 6px; align-items: center; }
 .thing:nth-child(even) { background: var(--bg-alt); }
 .rank { color: var(--faint); font-size: 15px; text-align: right; }
-/* Each title gets its own book-spine tint via --thumb-hue set on the element */
-.thumb { width: 44px; height: 32px; display: grid; place-items: center; background: hsl(var(--thumb-hue, 42) 24% 88%); color: hsl(var(--thumb-hue, 42) 30% 34%); border: 1px solid hsl(var(--thumb-hue, 42) 20% 77%); font: 700 14px Georgia, serif; border-radius: 3px; letter-spacing: -.5px; }
-:global([data-theme="dark"]) .thumb { background: hsl(var(--thumb-hue, 42) 14% 22%); color: hsl(var(--thumb-hue, 42) 26% 70%); border-color: hsl(var(--thumb-hue, 42) 14% 33%); }
+/* The thumb is parchment by default; it takes a vote color only when the
+   community's verdict leans that way — color always means keep/dissolve. */
+.thumb { width: 44px; height: 32px; display: grid; place-items: center; background: var(--thumb-bg); color: var(--thumb-fg); font: 700 14px Georgia, serif; border-radius: 3px; letter-spacing: -.5px; }
+.thumb[data-lean="keep"] { background: var(--keep-tint); color: var(--keep-ink); }
+.thumb[data-lean="dissolve"] { background: var(--dissolve-tint); color: var(--dissolve-ink); }
 .entry { min-width: 0; }
 .postTitle { margin: 0; font-size: 14px; line-height: 1.3; }
 .postTitle a { color: var(--link); }
