@@ -1,6 +1,6 @@
 /** Pure formatting helpers shared by server and client — no DB imports here. */
 
-import { subredditSlug } from "@/lib/title-names";
+import { subredditSlug } from "./title-names";
 
 /** Title number from a USLM identifier like '/us/usc/t18/s1111'. */
 export function titleFromIdentifier(identifier: string): number {
@@ -19,8 +19,10 @@ export function lawUrl(law: { title: number; num: string; identifier: string }):
   return `/r/${subredditSlug(law.title)}/${encodeURIComponent(`${law.num}${suffix}`)}`;
 }
 
-/** @deprecated alias kept for call-site compatibility; same as lawUrl. */
-export const rPostUrlFrom = (title: number, num: string, identifier: string) => lawUrl({ title, num, identifier });
+/** Canonical URL of a title's subreddit page. */
+export function subredditUrl(title: number): string {
+  return `/r/${subredditSlug(title)}`;
+}
 
 export function officialSourceUrl(title: number, num: string): string {
   return `https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title${title}-section${encodeURIComponent(num)}&num=0&edition=prelim`;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTitles } from "@/lib/data";
+import { subredditUrl } from "@/lib/reddit-format";
 import { subredditSlug } from "@/lib/title-names";
 import { RHeader } from "@/components/r/header";
 import styles from "./reddit.module.css";
@@ -19,7 +20,7 @@ export default async function AllTitles() {
             <div className={styles.rowLead}><span className={styles.rank}>{index + 1}</span></div>
             <span className={styles.thumb} aria-hidden>§</span>
             <div className={styles.entry}>
-              <p className={styles.postTitle}><Link href={`/r/${subredditSlug(Number(title.num))}`}>r/{subredditSlug(Number(title.num))}</Link></p>
+              <p className={styles.postTitle}><Link href={subredditUrl(Number(title.num))}>r/{subredditSlug(Number(title.num))}</Link></p>
               <p className={styles.tagline}>{title.sectionCount.toLocaleString()} sections · moderated by Congress (inactive)</p>
             </div>
           </article>)}

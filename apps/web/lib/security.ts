@@ -18,13 +18,3 @@ export function isSameOrigin(request: NextRequest) {
   if (!origin) return process.env.NODE_ENV !== "production";
   return origin === request.nextUrl.origin;
 }
-
-export function isAdmin(request: NextRequest) {
-  const password = process.env.ADMIN_PASSWORD;
-  if (!password) return false;
-  if (request.headers.get("x-admin-password") === password) return true;
-  const auth = request.headers.get("authorization");
-  if (!auth?.startsWith("Basic ")) return false;
-  const decoded = Buffer.from(auth.slice(6), "base64").toString();
-  return decoded.split(":").at(-1) === password;
-}

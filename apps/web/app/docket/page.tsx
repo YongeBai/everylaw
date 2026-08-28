@@ -1,7 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { lawUrl } from "@/lib/reddit-format";
-import { DOCKET_DESIGN } from "./design";
 import { DocketTrial } from "./docket-trial";
 import { getDocket } from "./pick";
 
@@ -14,10 +11,5 @@ export const dynamic = "force-dynamic";
 export default async function DocketPage() {
   const docket = await getDocket();
   if (!docket) return <main style={{ padding: 24, font: "13px Verdana, sans-serif" }}>No cases on the docket yet.</main>;
-
-  // "classic": today's trial IS a normal law post — everyone gets the same
-  // random-for-the-day law, presented exactly like any other, plus a banner.
-  if (DOCKET_DESIGN === "classic") redirect(`${lawUrl(docket.law)}?trial=1`);
-
   return <DocketTrial docket={docket} />;
 }

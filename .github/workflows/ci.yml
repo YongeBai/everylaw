@@ -25,7 +25,6 @@ jobs:
       DATABASE_URL: postgres://everylaw:everylaw@localhost:54329/everylaw
       VOTER_HASH_SECRET: ci-only-secret
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
-      ADMIN_PASSWORD: ci-review
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

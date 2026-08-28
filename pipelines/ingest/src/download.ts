@@ -8,7 +8,7 @@ import { pipeline } from 'node:stream/promises';
 const execFileAsync = promisify(execFile);
 
 /** Release point "119-102" → OLRC bulk zip URL. */
-export function releaseZipUrl(release: string): string {
+function releaseZipUrl(release: string): string {
   const m = release.match(/^(\d+)-(\d+)$/);
   if (!m) throw new Error(`invalid release point: ${release} (expected e.g. 119-102)`);
   return `https://uscode.house.gov/download/releasepoints/us/pl/${m[1]}/${m[2]}/xml_uscAll@${release}.zip`;
@@ -46,24 +46,4 @@ export function listTitleFiles(dir: string): Array<{ file: string; titleNum: num
     .filter((x): x is { f: string; m: RegExpMatchArray } => x.m !== null)
     .map((x) => ({ file: path.join(dir, x.f), titleNum: Number(x.m[1]) }))
     .sort((a, b) => a.titleNum - b.titleNum);
-}
-
-/** Download an explicitly supplied USLM archive and return its title XML files. */
-export async function downloadAndExtractXml(url: string, downloadDir: string): Promise<string[]> {
-  const dir = path.join(downloadDir, 'explicit');
-  const zipPath = path.join(dir, 'all.zip');
-  const doneMarker = path.join(dir, '.complete');
-  fs.mkdirSync(dir, { recursive: true });
-
-  if (!fs.existsSync(doneMarker)) {
-    if (!fs.existsSync(zipPath)) {
-      const response = await fetch(url);
-      if (!response.ok || !response.body) throw new Error(`download failed: HTTP ${response.status} for ${url}`);
-      await pipeline(Readable.fromWeb(response.body as never), fs.createWriteStream(zipPath));
-    }
-    await execFileAsync('unzip', ['-o', '-q', zipPath, '-d', dir], { maxBuffer: 64 * 1024 * 1024 });
-    fs.writeFileSync(doneMarker, new Date().toISOString());
-  }
-
-  return listTitleFiles(dir).map(({ file }) => file);
 }

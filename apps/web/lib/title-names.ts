@@ -9,7 +9,7 @@ export const TOPBAR_TITLES: [number, string][] = [
   [42, "health"], [16, "conservation"], [49, "transportation"], [7, "agriculture"], [38, "veterans"],
 ];
 
-export const TITLE_NAMES: Record<number, string> = {
+const TITLE_NAMES: Record<number, string> = {
   1: "GENERAL-PROVISIONS",
   2: "THE-CONGRESS",
   3: "THE-PRESIDENT",

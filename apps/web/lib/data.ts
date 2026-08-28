@@ -10,7 +10,7 @@ export type LawSummary = {
   sortKey: string;
   status: string; featuredTier: number; bodyText: string; bodyHtml: string;
   sourceCredit: string | null; enactingPl: string | null; enactedDate: string | null;
-  wordCount: number; amendmentCount: number; title: number;
+  wordCount: number; title: number;
   keepCount: number; dissolveCount: number; totalCount: number; dissolveRatio: number;
 };
 
@@ -19,14 +19,14 @@ function mapLaw(row: Record<string, unknown>): LawSummary {
     id: Number(row.id), identifier: String(row.identifier), citation: String(row.citation), num: String(row.num), heading: String(row.heading), sortKey: String(row.sort_key),
     status: String(row.status), featuredTier: Number(row.featured_tier), bodyText: String(row.body_text ?? ""), bodyHtml: String(row.body_html ?? ""),
     sourceCredit: row.source_credit ? String(row.source_credit) : null, enactingPl: row.enacting_pl ? String(row.enacting_pl) : null,
-    enactedDate: row.enacted_date ? String(row.enacted_date) : null, wordCount: Number(row.word_count), amendmentCount: Number(row.amendment_count),
+    enactedDate: row.enacted_date ? String(row.enacted_date) : null, wordCount: Number(row.word_count),
     title: titleFromIdentifier(String(row.identifier)), keepCount: Number(row.keep_count ?? 0),
     dissolveCount: Number(row.dissolve_count ?? 0), totalCount: Number(row.total_count ?? 0), dissolveRatio: Number(row.dissolve_ratio ?? 0),
   };
 }
 
-const VOTE_JOIN = `LEFT JOIN vote_aggregates v ON v.node_id=n.id`;
-const VOTE_COLS = `COALESCE(v.keep_count,0) keep_count, COALESCE(v.dissolve_count,0) dissolve_count,
+export const VOTE_JOIN = `LEFT JOIN vote_aggregates v ON v.node_id=n.id`;
+export const VOTE_COLS = `COALESCE(v.keep_count,0) keep_count, COALESCE(v.dissolve_count,0) dissolve_count,
   COALESCE(v.total_count,0) total_count, COALESCE(v.dissolve_ratio,0) dissolve_ratio`;
 
 /** Full row incl. statute bodies — for single-law pages only. */
@@ -34,7 +34,7 @@ const lawSelect = sql.raw(`SELECT n.*, ${VOTE_COLS} FROM law_nodes n ${VOTE_JOIN
 /** List row without body_text/body_html — bodies are megabytes at list scale. */
 const lawSelectLite = sql.raw(`
   SELECT n.id, n.identifier, n.citation, n.num, n.heading, n.sort_key, n.status, n.featured_tier,
-    n.source_credit, n.enacting_pl, n.enacted_date, n.word_count, n.amendment_count, ${VOTE_COLS}
+    n.source_credit, n.enacting_pl, n.enacted_date, n.word_count, ${VOTE_COLS}
   FROM law_nodes n ${VOTE_JOIN}
 `);
 
@@ -49,6 +49,12 @@ export const getLaw = cache(async (title: string, section: string): Promise<LawS
 
 export async function getLawById(id: number): Promise<LawSummary | null> {
   const rows = await db.execute(sql`${lawSelect} WHERE n.id=${id} LIMIT 1`);
+  return rows[0] ? mapLaw(rows[0]) : null;
+}
+
+/** Like getLawById but without the statute bodies — for stat-only consumers (OG images, verdict recaps). */
+export async function getLawLiteById(id: number): Promise<LawSummary | null> {
+  const rows = await db.execute(sql`${lawSelectLite} WHERE n.id=${id} LIMIT 1`);
   return rows[0] ? mapLaw(rows[0]) : null;
 }
 
@@ -100,6 +106,15 @@ export async function getTakes(nodeId: number, viewerHash?: string | null) {
   return rows.map((row) => ({ id: Number(row.id), body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count ?? 0), parentId: row.parent_id === null || row.parent_id === undefined ? null : Number(row.parent_id), createdAt: String(row.created_at), vote: directionToVote(row.direction === null || row.direction === undefined ? null : String(row.direction)), mine: Boolean(row.mine) }));
 }
 
+/** Live corpus stats for the homepage sidebar — one aggregate, request-cached. */
+export const getCorpusStats = cache(async () => {
+  const rows = await db.execute(sql`SELECT
+    count(*) FILTER (WHERE node_type='section' AND status='active')::int sections_in_force,
+    count(*) FILTER (WHERE node_type='title')::int titles
+    FROM law_nodes`);
+  return { sectionsInForce: Number(rows[0]!.sections_in_force), titles: Number(rows[0]!.titles) };
+});
+
 export async function getLawNavigation(law: LawSummary) {
   const prefix = `/us/usc/t${law.title}/s%`;
   const [previousRows, nextRows, relatedRows] = await Promise.all([
@@ -113,5 +128,3 @@ export async function getLawNavigation(law: LawSummary) {
   const related = relatedRows.map(mapLaw).filter((item) => item.id !== previous?.id && item.id !== next?.id);
   return { previous, next, related };
 }
-
-export { lawUrl } from "./reddit-format";

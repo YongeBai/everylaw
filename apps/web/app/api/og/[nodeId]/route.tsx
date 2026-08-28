@@ -1,9 +1,9 @@
 import { ImageResponse } from "next/og";
-import { getLawById } from "@/lib/data";
+import { getLawLiteById } from "@/lib/data";
 
 export const runtime = "nodejs";
 export async function GET(_: Request, { params }: { params: Promise<{ nodeId: string }> }) {
-  const law = await getLawById(Number((await params).nodeId));
+  const law = await getLawLiteById(Number((await params).nodeId));
   if (!law) return new Response("Not found", { status: 404 });
   const dissolve = Math.round(law.dissolveRatio * 100);
   return new ImageResponse(<div style={{ width: "100%", height: "100%", background: "#f5f0e6", color: "#13241d", padding: 70, display: "flex", flexDirection: "column", justifyContent: "space-between", fontFamily: "serif" }}>

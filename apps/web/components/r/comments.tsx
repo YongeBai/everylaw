@@ -17,7 +17,7 @@ function ago(iso: string): string {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
-export function VoteBadge({ id, vote }: { id: number; vote: PostVote | null }) {
+function VoteBadge({ id, vote }: { id: number; vote: PostVote | null }) {
   if (!vote) return null;
   return <span data-vote={vote} data-testid={`cvote-${id}`} className={styles.voteTag} title={`this commenter ${vote === "up" ? "upvoted" : "downvoted"} this law`}>{vote === "up" ? "▲ upvoted" : "▼ downvoted"}</span>;
 }

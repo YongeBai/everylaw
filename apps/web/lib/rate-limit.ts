@@ -2,14 +2,27 @@ import { sql } from "drizzle-orm";
 import { db } from "@everylaw/db";
 
 type Identity = { voterHash: string; ipHash: string };
-const limits = { vote: 30, take: 5, "take-vote": 60, matchup: 300, guess: 600 } as const;
+const limits = { vote: 30, take: 5, "take-vote": 60 } as const;
 type Action = keyof typeof limits;
+
+// One limiter per action for the process lifetime — rebuilding per request
+// would throw away @upstash/ratelimit's in-memory blocklist cache.
+type Limiter = { limit: (key: string) => Promise<{ success: boolean }> };
+const limiters = new Map<Action, Promise<Limiter>>();
+function redisLimiter(action: Action, url: string, token: string): Promise<Limiter> {
+  let limiter = limiters.get(action);
+  if (!limiter) {
+    limiter = Promise.all([import("@upstash/ratelimit"), import("@upstash/redis")]).then(([{ Ratelimit }, { Redis }]) =>
+      new Ratelimit({ redis: new Redis({ url, token }), limiter: Ratelimit.slidingWindow(limits[action], "1 h"), prefix: `everylaw:${action}` }));
+    limiters.set(action, limiter);
+  }
+  return limiter;
+}
 
 export async function checkRateLimit(action: Action, identity: Identity): Promise<boolean> {
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL; const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (redisUrl && redisToken) {
-    const [{ Ratelimit }, { Redis }] = await Promise.all([import("@upstash/ratelimit"), import("@upstash/redis")]);
-    const limiter = new Ratelimit({ redis: new Redis({ url: redisUrl, token: redisToken }), limiter: Ratelimit.slidingWindow(limits[action], "1 h"), prefix: `everylaw:${action}` });
+    const limiter = await redisLimiter(action, redisUrl, redisToken);
     const [voter, ip] = await Promise.all([limiter.limit(`voter:${identity.voterHash}`), limiter.limit(`ip:${identity.ipHash}`)]);
     return voter.success && ip.success;
   }

@@ -163,8 +163,6 @@
 .trialComments { margin-top: 6px; }
 
 /* "classic" docket design: banner atop the normal post */
-.trialBanner { display: flex; gap: 10px; align-items: baseline; margin: 8px 4px 0; border: 1px solid #b7d792; border-radius: 4px; background: #e8f5d8; color: #37731a; font-size: 11px; font-weight: 700; padding: 6px 12px; }
-.trialBanner span { font-weight: 400; color: #4a6b33; }
 
 .trialStickyRight { float: right; font-weight: 400; color: #4a6b33; }
 .trialMore { margin-top: 10px; }

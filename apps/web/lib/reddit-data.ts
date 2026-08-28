@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@everylaw/db";
+import { VOTE_COLS, VOTE_JOIN } from "@/lib/data";
 import { titleFromIdentifier } from "@/lib/reddit-format";
 
 export type RSort = "hot" | "top" | "controversial" | "dissolved" | "kept" | "order";
@@ -16,8 +17,8 @@ export const isSort = (value: string): value is RSort => R_SORTS.some((sort) => 
 
 export type RPost = {
   id: number; identifier: string; citation: string; num: string; heading: string; status: string;
-  title: number; wordCount: number; enactedDate: string | null; enactingPl: string | null;
-  keepCount: number; dissolveCount: number; totalCount: number; dissolveRatio: number;
+  title: number; enactedDate: string | null; enactingPl: string | null;
+  keepCount: number; dissolveCount: number;
   commentCount: number; recentVotes: number;
 };
 
@@ -26,10 +27,9 @@ function mapPost(row: Record<string, unknown>): RPost {
     id: Number(row.id), identifier: String(row.identifier), citation: String(row.citation),
     num: String(row.num), heading: String(row.heading), status: String(row.status),
     title: titleFromIdentifier(String(row.identifier)),
-    wordCount: Number(row.word_count), enactedDate: row.enacted_date ? String(row.enacted_date) : null,
+    enactedDate: row.enacted_date ? String(row.enacted_date) : null,
     enactingPl: row.enacting_pl ? String(row.enacting_pl) : null,
     keepCount: Number(row.keep_count ?? 0), dissolveCount: Number(row.dissolve_count ?? 0),
-    totalCount: Number(row.total_count ?? 0), dissolveRatio: Number(row.dissolve_ratio ?? 0),
     commentCount: Number(row.comment_count ?? 0), recentVotes: Number(row.recent_votes ?? 0),
   };
 }
@@ -49,12 +49,11 @@ export async function getRPosts(sort: RSort, titleNum?: number, limit = 25, offs
     ? sql`n.identifier LIKE ${"/us/usc/t" + titleNum + "/%"}`
     : sql`(COALESCE(v.total_count,0) > 0 OR n.featured_tier >= 1)`;
   const rows = await db.execute(sql`
-    SELECT n.id, n.identifier, n.citation, n.num, n.heading, n.status, n.word_count, n.enacted_date, n.enacting_pl,
-      COALESCE(v.keep_count,0) keep_count, COALESCE(v.dissolve_count,0) dissolve_count,
-      COALESCE(v.total_count,0) total_count, COALESCE(v.dissolve_ratio,0) dissolve_ratio,
+    SELECT n.id, n.identifier, n.citation, n.num, n.heading, n.status, n.enacted_date, n.enacting_pl,
+      ${sql.raw(VOTE_COLS)},
       COALESCE(t.cnt,0) comment_count, COALESCE(r.cnt,0) recent_votes
     FROM law_nodes n
-    LEFT JOIN vote_aggregates v ON v.node_id = n.id
+    ${sql.raw(VOTE_JOIN)}
     LEFT JOIN LATERAL (SELECT count(*)::int cnt FROM takes WHERE node_id = n.id AND moderation_status='published') t ON true
     LEFT JOIN LATERAL (SELECT count(*)::int cnt FROM votes WHERE node_id = n.id AND updated_at > now() - interval '7 days') r ON true
     WHERE n.node_type = 'section' AND ${scope}
@@ -63,5 +62,3 @@ export async function getRPosts(sort: RSort, titleNum?: number, limit = 25, offs
   `);
   return rows.map(mapPost);
 }
-
-

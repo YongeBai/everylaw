@@ -4,9 +4,8 @@ import { notFound } from "next/navigation";
 import { getAiContent, getLaw, getLawNavigation, getTakes } from "@/lib/data";
 import { viewerVoterHash } from "@/lib/viewer";
 import { parseHistory } from "@/lib/history";
-import { getTodayTrialId } from "@/app/docket/pick";
 import { highlightTerms } from "@/lib/terms";
-import { agePhrase, lawUrl, officialSourceUrl } from "@/lib/reddit-format";
+import { agePhrase, lawUrl, officialSourceUrl, subredditUrl } from "@/lib/reddit-format";
 import { subredditSlug } from "@/lib/title-names";
 import { RHeader } from "@/components/r/header";
 import { VoteArrows } from "@/components/r/vote-arrows";
@@ -14,7 +13,7 @@ import { OfficialText } from "@/components/r/official-text";
 import { Comments } from "@/components/r/comments";
 import styles from "../../reddit.module.css";
 
-type Props = { params: Promise<{ titleSlug: string; section: string }>; searchParams: Promise<{ trial?: string }> };
+type Props = { params: Promise<{ titleSlug: string; section: string }> };
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -24,13 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `${law.citation} — ${law.heading}`, description: `Read ${law.citation} in plain English, see its history, and make the case to keep or dissolve it.`, alternates: { canonical: lawUrl(law) } };
 }
 
-export default async function RPostPage({ params, searchParams }: Props) {
+export default async function RPostPage({ params }: Props) {
   const { titleSlug, section } = await params;
-  const { trial } = await searchParams;
   const law = await getLaw(titleSlug, decodeURIComponent(section));
   if (!law) notFound();
-  // The banner claims "today's trial" — verify against the docket, don't trust the URL.
-  const isTrial = trial !== undefined && (await getTodayTrialId()) === law.id;
   const [content, takes, navigation] = await Promise.all([getAiContent(law.id), viewerVoterHash().then((hash) => getTakes(law.id, hash)), getLawNavigation(law)]);
   const history = parseHistory(law.sourceCredit);
   const url = lawUrl(law);
@@ -38,14 +34,13 @@ export default async function RPostPage({ params, searchParams }: Props) {
 
   return <div className={styles.page}>
     <RHeader activeTitle={titleSlug} />
-    {isTrial && <div className={styles.trialBanner} data-testid="trial-banner">⚖ today’s trial<span>new law is up for trial at midnight PST</span></div>}
     <div className={styles.shell}>
       <main className={styles.main}>
         <article className={styles.post}>
           <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} size="post" />
           <div className={styles.postHead}>
             <h1><Link href={sourceUrl} target="_blank" rel="noopener">{law.citation} — {law.heading}</Link>{law.status !== "active" && <span className={styles.postFlair}>{law.status}</span>}</h1>
-            <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={`/r/${subredditSlug(law.title)}`}>r/{subredditSlug(law.title)}</Link> · {law.wordCount.toLocaleString()} words · {law.keepCount} keep · {law.dissolveCount} dissolve</p>
+            <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={subredditUrl(law.title)}>r/{subredditSlug(law.title)}</Link> · {law.wordCount.toLocaleString()} words · {law.keepCount} keep · {law.dissolveCount} dissolve</p>
 
             <section className={styles.section} data-testid="post-translation">
               <div className={styles.sectionHead}>in plain english<span className={styles.aiBadge}>AI-assisted · reviewed · not legal advice</span></div>

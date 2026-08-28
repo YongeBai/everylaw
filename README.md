@@ -54,7 +54,7 @@ Local deterministic content exercises the complete generation/review flow withou
 npm run generate -w @everylaw/ai -- --tier 2 --limit 4
 ```
 
-For Anthropic generation, set `ANTHROPIC_API_KEY`, then pass `--provider anthropic`. The pipeline defaults to `claude-sonnet-5`; set `ANTHROPIC_MODEL` to override it. Generated content is draft by default. Review it at `/admin/review`; only published versions render. Use `--type summary|explanation|origin|facts` to retry one content type without duplicating accepted drafts. `--publish` is intended for trusted local fixtures or the tier-1 auto-publish workflow.
+For Anthropic generation, set `ANTHROPIC_API_KEY`, then pass `--provider anthropic`. The pipeline defaults to `claude-sonnet-5`; set `ANTHROPIC_MODEL` to override it. Generated content is draft by default. Review and publish it with `ops/publish-ai-batch.sql`; only published versions render. Use `--type summary|explanation|origin|facts` to retry one content type without duplicating accepted drafts. `--publish` is intended for trusted local fixtures or the tier-1 auto-publish workflow.
 
 Candidate ranking is available through:
 
@@ -74,10 +74,10 @@ npm run build
 npm run test:e2e
 ```
 
-The Playwright suite exercises desktop/mobile browse and pagination, autocomplete, both duplicate-number URL variants, vote persistence and re-voting, take creation/upvotes, rankings, share/clipboard, sitemap/robots/OG output, admin review actions, hostile-origin rejection, and rate limiting.
+The Playwright suite exercises desktop/mobile browse and pagination, autocomplete, both duplicate-number URL variants, vote persistence and re-voting, take creation/upvotes, rankings, share/clipboard, sitemap/robots/OG output, hostile-origin rejection, and rate limiting.
 
 ## Production configuration
 
-Set `DATABASE_URL`, a strong `VOTER_HASH_SECRET`, `ADMIN_PASSWORD`, and `NEXT_PUBLIC_BASE_URL`. Upstash is activated when both `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` exist; otherwise local Postgres provides rate accounting. Plausible loads only when `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set. Neon’s direct connection should be used for ingestion and migrations.
+Set `DATABASE_URL`, a strong `VOTER_HASH_SECRET`, and `NEXT_PUBLIC_BASE_URL`. Upstash is activated when both `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` exist; otherwise local Postgres provides rate accounting. Plausible loads only when `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set. Neon’s direct connection should be used for ingestion and migrations.
 
 Anonymous identifiers, IPs, and user agents are stored only as salted hashes. Vote rows already include a nullable `user_id` for future account claiming. Public totals are signals, not referenda.

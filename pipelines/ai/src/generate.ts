@@ -22,11 +22,21 @@ const rows = await db.execute(sql`SELECT id, citation, heading, body_text, sourc
 
 type Generated = { body: string; model: string; input: number; output: number; truncated?: boolean };
 
+// One client and one read per prompt file for the whole run, not per law × type.
+let clientPromise: Promise<InstanceType<typeof import("@anthropic-ai/sdk").default>> | undefined;
+const promptCache = new Map<ContentType, Promise<string>>();
+
 async function anthropicGenerate(type: ContentType, law: LawInput): Promise<Generated> {
   const apiKey = process.env.ANTHROPIC_API_KEY; const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is required for --provider anthropic");
-  const { default: Anthropic } = await import("@anthropic-ai/sdk"); const client = new Anthropic({ apiKey });
-  const instruction = await readFile(new URL(`../prompts/${type}.${promptVersions[type]}.md`, import.meta.url), "utf8");
+  clientPromise ??= import("@anthropic-ai/sdk").then(({ default: Anthropic }) => new Anthropic({ apiKey }));
+  const client = await clientPromise;
+  let instructionPromise = promptCache.get(type);
+  if (!instructionPromise) {
+    instructionPromise = readFile(new URL(`../prompts/${type}.${promptVersions[type]}.md`, import.meta.url), "utf8");
+    promptCache.set(type, instructionPromise);
+  }
+  const instruction = await instructionPromise;
   // Current Claude models may spend part of max_tokens on internal processing.
   // Content lint below remains the user-visible length guard.
   const maxTokens: Record<ContentType, number> = { summary: 180, explanation: 900, origin: 1200, facts: 500 };

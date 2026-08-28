@@ -3,7 +3,7 @@
  * text (annotated-edition feature). Serious register only:
  * where a term is undefined in the displayed section, the note says so.
  */
-export type TermDef = { term: string; definition: string };
+type TermDef = { term: string; definition: string };
 
 export const TERM_DEFINITIONS: TermDef[] = [
   { term: "malice aforethought", definition: "A common-law term of art for the mental state that makes a killing murder. Sections that use it rarely define it; federal courts give it content case by case. It does not require hatred or long planning." },

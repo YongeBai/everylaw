@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { lawUrl, searchLaws } from "@/lib/data";
+import { searchLaws } from "@/lib/data";
+import { lawUrl } from "@/lib/reddit-format";
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get("q")?.slice(0, 100) || "";

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { dissentShare, readLocalVotes, type LocalVote } from "@/lib/local-history";
 import { RHeader } from "@/components/r/header";
 import styles from "../reddit.module.css";
@@ -10,15 +10,14 @@ export default function HistoryPage() {
   const [votes, setVotes] = useState<LocalVote[] | null>(null);
   useEffect(() => { setVotes(Object.values(readLocalVotes()).sort((a, b) => b.ts - a.ts)); }, []);
 
-  const hottest = votes && votes.length > 0
-    ? votes.reduce((top, vote) => (dissentShare(vote) > dissentShare(top) ? vote : top))
-    : null;
-  const hottestDissent = hottest ? dissentShare(hottest) : 0;
-  const kept = votes?.filter((vote) => vote.direction === "keep").length ?? 0;
-  const dissolved = votes?.filter((vote) => vote.direction === "dissolve").length ?? 0;
-  const shareText = votes && votes.length > 0
-    ? `My EveryLaw record: ${votes.length} laws judged — ${kept} kept, ${dissolved} dissolved.${hottest && hottestDissent > 0.5 ? ` Hottest take: ${hottest.direction.toUpperCase()} on ${hottest.citation}, against ${Math.round(hottestDissent * 100)}% of voters.` : ""} everylaw.us`
-    : "";
+  const { hottest, hottestDissent, shareText } = useMemo(() => {
+    if (!votes || votes.length === 0) return { hottest: null, hottestDissent: 0, shareText: "" };
+    const hottest = votes.reduce((top, vote) => (dissentShare(vote) > dissentShare(top) ? vote : top));
+    const hottestDissent = dissentShare(hottest);
+    const kept = votes.filter((vote) => vote.direction === "keep").length;
+    const shareText = `My EveryLaw record: ${votes.length} laws judged — ${kept} kept, ${votes.length - kept} dissolved.${hottestDissent > 0.5 ? ` Hottest take: ${hottest.direction.toUpperCase()} on ${hottest.citation}, against ${Math.round(hottestDissent * 100)}% of voters.` : ""} everylaw.us`;
+    return { hottest, hottestDissent, shareText };
+  }, [votes]);
 
   return <div className={styles.page}>
     <RHeader />

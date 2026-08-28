@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { subredditSlug, titleNumberFromSlug, TOPBAR_TITLES } from "@/lib/title-names";
+import { titleNumberFromSlug, TOPBAR_TITLES } from "@/lib/title-names";
+import { subredditUrl } from "@/lib/reddit-format";
 import styles from "@/app/r/reddit.module.css";
 
 type Suggestion = { citation: string; heading: string; url: string };
@@ -26,7 +27,7 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
   return <>
     <div className={styles.topbar}>
       <Link href="/" className={styles.topbarHome}>ALL</Link>
-      {TOPBAR_TITLES.map(([num, label]) => <Link key={num} data-active={(activeTitle && titleNumberFromSlug(activeTitle) === num) || undefined} href={`/r/${subredditSlug(num)}`}>{label}</Link>)}
+      {TOPBAR_TITLES.map(([num, label]) => <Link key={num} data-active={(activeTitle && titleNumberFromSlug(activeTitle) === num) || undefined} href={subredditUrl(num)}>{label}</Link>)}
       <Link href="/r" className={styles.topbarMore}>browse all titles »</Link>
     </div>
     <header className={styles.header}>

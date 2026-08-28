@@ -100,7 +100,7 @@ function ltreeLabel(identifierSegment: string): string {
 }
 
 /** Zero-pad the leading digits of a section/container num so text sort works. */
-export function makeSortKey(num: string | null, fallback: string): string {
+function makeSortKey(num: string | null, fallback: string): string {
   const src = (num ?? fallback).trim();
   const m = src.match(/^(\d+)(.*)$/);
   if (!m) return src.toLowerCase().padStart(8, '0');
@@ -173,7 +173,6 @@ interface ContainerFrame {
   capturing: 'num' | 'heading' | null;
   captureDepth: number;
   emitted: boolean;
-  sawStructuralChild: boolean;
 }
 
 interface SectionFrame {
@@ -366,9 +365,7 @@ export async function parseUslmFile(
         capturing: null,
         captureDepth: 0,
         emitted: false,
-        sawStructuralChild: false,
       };
-      if (parent) parent.sawStructuralChild = true;
       containers.push(frame);
       if (name === 'title') {
         const m = sourceIdentifier.match(/\/t([0-9a-zA-Z-]+)$/);
@@ -407,7 +404,6 @@ export async function parseUslmFile(
         text: [],
         skipDepth: 0,
       };
-      if (current) current.sawStructuralChild = true;
       return;
     }
 
@@ -434,7 +430,7 @@ export async function parseUslmFile(
       } else if (section.capturing === 'credit') {
         section.credit += text;
       } else {
-        if (text.trim().length > 0) {
+        if (/\S/.test(text)) {
           section.html.push(escapeHtml(text));
           section.text.push(text);
         }
