@@ -80,4 +80,4 @@ The Playwright suite exercises desktop/mobile browse and pagination, autocomplet
 
 Set `DATABASE_URL`, a strong `VOTER_HASH_SECRET`, and `NEXT_PUBLIC_BASE_URL`. Upstash is activated when both `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` exist; otherwise local Postgres provides rate accounting. Plausible loads only when `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set. Neon’s direct connection should be used for ingestion and migrations.
 
-Anonymous identifiers, IPs, and user agents are stored only as salted hashes. Vote rows already include a nullable `user_id` for future account claiming. Public totals are signals, not referenda.
+Anonymous identifiers, IPs, and user agents are stored only as salted hashes. Public totals are signals, not referenda.

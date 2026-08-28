@@ -2,7 +2,6 @@ import { sql, type SQL } from 'drizzle-orm';
 import {
   bigint,
   bigserial,
-  boolean,
   char,
   check,
   customType,
@@ -118,7 +117,7 @@ export const aiContents = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// Votes — anonymous, cookie-hash deduped; nullable user_id for future accounts
+// Votes — anonymous, cookie-hash deduped
 // ---------------------------------------------------------------------------
 export const votes = pgTable(
   'votes',
@@ -131,7 +130,6 @@ export const votes = pgTable(
     voterHash: char('voter_hash', { length: 64 }).notNull(),
     ipHash: char('ip_hash', { length: 64 }).notNull(),
     userAgentHash: char('user_agent_hash', { length: 64 }),
-    userId: bigint('user_id', { mode: 'number' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -167,7 +165,6 @@ export const takes = pgTable(
     body: text('body').notNull(),
     voterHash: char('voter_hash', { length: 64 }).notNull(),
     ipHash: char('ip_hash', { length: 64 }).notNull(),
-    userId: bigint('user_id', { mode: 'number' }),
     // mirrors 0006_comment_threads
     parentId: bigint('parent_id', { mode: 'number' }),
     downvoteCount: integer('downvote_count').notNull().default(0),
@@ -263,89 +260,6 @@ export const ingestionRuns = pgTable('ingestion_runs', {
   status: text('status').notNull().default('running'), // running|succeeded|failed
   log: jsonb('log'),
 });
-
-// ---------------------------------------------------------------------------
-// Head-to-head matchups + ELO (migration 0004_elo.sql — definitions mirror it)
-// ---------------------------------------------------------------------------
-export const matchupVotes = pgTable(
-  'matchup_votes',
-  {
-    id: bigserial('id', { mode: 'number' }).primaryKey(),
-    winnerNodeId: bigint('winner_node_id', { mode: 'number' })
-      .notNull()
-      .references(() => lawNodes.id),
-    loserNodeId: bigint('loser_node_id', { mode: 'number' })
-      .notNull()
-      .references(() => lawNodes.id),
-    voterHash: char('voter_hash', { length: 64 }).notNull(),
-    ipHash: char('ip_hash', { length: 64 }).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    index('matchup_votes_pair_idx').on(t.winnerNodeId, t.loserNodeId),
-    index('matchup_votes_voter_idx').on(t.voterHash, t.createdAt),
-    index('matchup_votes_ip_idx').on(t.ipHash, t.createdAt),
-    check('matchup_votes_distinct_ck', sql`winner_node_id <> loser_node_id`),
-  ],
-);
-
-export const eloRatings = pgTable(
-  'elo_ratings',
-  {
-    nodeId: bigint('node_id', { mode: 'number' })
-      .primaryKey()
-      .references(() => lawNodes.id),
-    elo: real('elo').notNull().default(1500),
-    matches: integer('matches').notNull().default(0),
-    wins: integer('wins').notNull().default(0),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [index('elo_ratings_elo_idx').on(t.elo)],
-);
-
-export const eloSnapshots = pgTable(
-  'elo_snapshots',
-  {
-    nodeId: bigint('node_id', { mode: 'number' })
-      .notNull()
-      .references(() => lawNodes.id),
-    snappedOn: date('snapped_on').notNull(),
-    rank: integer('rank').notNull(),
-    elo: real('elo').notNull(),
-  },
-  (t) => [
-    primaryKey({ columns: [t.nodeId, t.snappedOn] }),
-    index('elo_snapshots_day_idx').on(t.snappedOn),
-  ],
-);
-
-// ---------------------------------------------------------------------------
-// "Can't Make It Up" real-or-fake game (migration 0005_realfake.sql — mirrors it)
-// ---------------------------------------------------------------------------
-export const decoys = pgTable('decoys', {
-  id: smallserial('id').primaryKey(),
-  citation: text('citation').notNull().unique(),
-  heading: text('heading').notNull(),
-});
-
-export const guesses = pgTable(
-  'guesses',
-  {
-    id: bigserial('id', { mode: 'number' }).primaryKey(),
-    itemKind: text('item_kind').notNull(), // 'law' | 'decoy'
-    itemId: bigint('item_id', { mode: 'number' }).notNull(),
-    voterHash: char('voter_hash', { length: 64 }).notNull(),
-    ipHash: char('ip_hash', { length: 64 }).notNull(),
-    guessedReal: boolean('guessed_real').notNull(),
-    correct: boolean('correct').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    index('guesses_item_idx').on(t.itemKind, t.itemId),
-    index('guesses_voter_idx').on(t.voterHash, t.createdAt),
-    check('guesses_kind_ck', sql`item_kind in ('law', 'decoy')`),
-  ],
-);
 
 export type LawNode = typeof lawNodes.$inferSelect;
 export type NewLawNode = typeof lawNodes.$inferInsert;
