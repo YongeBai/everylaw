@@ -19,6 +19,7 @@
 .searchDrop { position: absolute; top: 100%; left: 0; right: 0; z-index: 30; background: var(--bg); border: 1px solid var(--header-border); border-top: 0; }
 .searchDrop button { display: block; width: 100%; text-align: left; border: 0; background: var(--bg); color: var(--text); padding: 6px 8px; font: inherit; cursor: pointer; border-bottom: 1px solid var(--border-faint); }
 .searchDrop button:hover { background: var(--hover-tint); }
+.searchLoading { display: block; padding: 6px 8px; color: var(--muted); font-style: italic; }
 .headerLinks { display: flex; gap: 12px; font-size: 11px; font-weight: 700; }
 .nightMode { border: 0; background: none; padding: 0; color: var(--link); font: inherit; font-weight: 700; cursor: pointer; }
 .nightMode:hover { text-decoration: underline; }
