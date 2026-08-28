@@ -4,28 +4,24 @@ import { useSyncExternalStore } from "react";
 import styles from "@/app/r/reddit.module.css";
 
 /**
- * RES-style night mode. An explicit choice is stamped on <html data-theme> and
- * persisted; before any choice, the system preference decides (see globals.css
- * and the boot script in the root layout).
+ * RES-style night mode. Light is the default; choosing night mode stamps
+ * <html data-theme> and persists it (see globals.css and the boot script in
+ * the root layout).
  */
 
 function currentTheme(): "dark" | "light" {
-  const chosen = document.documentElement.getAttribute("data-theme");
-  if (chosen === "dark" || chosen === "light") return chosen;
-  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
 }
 
 let notify = () => {};
 const subscribe = (onChange: () => void) => {
   notify = onChange;
-  const media = matchMedia("(prefers-color-scheme: dark)");
-  media.addEventListener("change", onChange);
-  return () => { notify = () => {}; media.removeEventListener("change", onChange); };
+  return () => { notify = () => {}; };
 };
 
 export function ThemeToggle() {
-  // Server snapshot says "light" so SSR + first client render agree; the real
-  // theme replaces it right after hydration.
+  // Server snapshot matches the light default, so SSR and the first client
+  // render agree; a stored dark choice replaces it right after hydration.
   const theme = useSyncExternalStore(subscribe, currentTheme, () => "light");
 
   function toggle() {

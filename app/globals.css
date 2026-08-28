@@ -1,8 +1,8 @@
 * { box-sizing: border-box; }
 
-/* Theme tokens. Light is the canonical old-reddit palette; dark is the
-   RES-night-mode analog. An explicit choice sets data-theme on <html>
-   (persisted in localStorage); with none set, the system preference wins. */
+/* Theme tokens. Light is the canonical old-reddit palette and the default;
+   dark is the RES-night-mode analog, applied only when the visitor opts in
+   via the toggle (data-theme on <html>, persisted in localStorage). */
 :root {
   color-scheme: light;
   --bg: #fff;
@@ -83,50 +83,6 @@
   --trial-line: #3e5a26;
   --trial-ink: #8ed162;
   --trial-soft: #86a86f;
-}
-
-/* System dark, unless the visitor explicitly chose light. Values mirror
-   :root[data-theme="dark"] above — keep the two blocks identical. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #1a1a1b;
-    --bg-alt: #222223;
-    --bg-box: #272729;
-    --bg-topbar: #161617;
-    --text: #d7dadc;
-    --text-soft: #b8bcbf;
-    --muted: #818384;
-    --muted-quiet: #6b6d6f;
-    --faint: #565758;
-    --link: #8cb3d9;
-    --link-visited: #b3a2d0;
-    --link-soft: #7fa8cf;
-    --header-bg: #1f3247;
-    --header-border: #40608a;
-    --border: #3e4042;
-    --border-soft: #343536;
-    --border-mid: #47494b;
-    --border-faint: #2f3031;
-    --keep-ink: #ff8b60;
-    --dissolve-ink: #a9a7ff;
-    --keep-tint: #3c1f14;
-    --dissolve-tint: #232345;
-    --error: #e0776b;
-    --thumb-bg: #35301f;
-    --thumb-fg: #b5a97f;
-    --note-bg: #2b2717;
-    --note-border: #6e6135;
-    --note-ink: #d9c87e;
-    --term-hover: #3a251a;
-    --defterm-hover: #1e2c38;
-    --hover-tint: #1e2c38;
-    --trial-border: #3c8a0e;
-    --trial-bg: #1d2914;
-    --trial-line: #3e5a26;
-    --trial-ink: #8ed162;
-    --trial-soft: #86a86f;
-  }
 }
 
 html { background: var(--bg); color: var(--text); scroll-behavior: smooth; }
