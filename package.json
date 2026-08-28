@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
+    "@neon/config": "^1.0.5",
     "@upstash/ratelimit": "^2.0.7",
     "@upstash/redis": "^1.35.3",
     "commander": "^14.0.0",

@@ -10,3 +10,5 @@ pipelines/ingest/data/
 playwright-report/
 test-results/
 .claude/
+.neon
+.env.neon
