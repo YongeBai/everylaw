@@ -24,6 +24,11 @@ export function subredditUrl(title: number): string {
   return `/r/${subredditSlug(title)}`;
 }
 
+/** Canonical URL of a title's wiki — the index of its statutory defined terms. */
+export function wikiUrl(title: number): string {
+  return `/r/${subredditSlug(title)}/wiki`;
+}
+
 export function officialSourceUrl(title: number, num: string): string {
   return `https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title${title}-section${encodeURIComponent(num)}&num=0&edition=prelim`;
 }

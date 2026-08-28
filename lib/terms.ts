@@ -1,7 +1,12 @@
 /**
- * Curated statutory terms of art, surfaced as inline definitions on official
- * text (annotated-edition feature). Serious register only:
- * where a term is undefined in the displayed section, the note says so.
+ * Inline term annotation on official statute text.
+ *
+ * Two sources feed it: statutory defined terms extracted into the
+ * defined_terms table (starred; card shows the statute's own definition and
+ * links to the defining section + the title wiki), and a small curated list of
+ * terms of art below (dotted; editorial notes for terms the statute uses but
+ * never defines). Serious register only: where a term is undefined in the
+ * displayed section, the note says so.
  */
 type TermDef = { term: string; definition: string };
 
@@ -18,19 +23,78 @@ export const TERM_DEFINITIONS: TermDef[] = [
   { term: "person", definition: "Under the Dictionary Act, 1 U.S.C. § 1, “person” presumptively includes corporations, companies, associations, firms, partnerships, societies, and joint stock companies as well as individuals." },
 ];
 
-// Compiled once at module load — highlightTerms runs on every law-page render.
-// Deliberately non-global: only the FIRST occurrence of each term is marked, so
-// common words ("person", "whoever") don't turn the statute into confetti.
-const TERM_PATTERNS = TERM_DEFINITIONS.map(({ term }) => ({
-  term,
-  pattern: new RegExp(`(?<![\\w>])${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i"),
-}));
+const isWordChar = (ch: string | undefined) => ch !== undefined && /[\w’']/.test(ch);
 
-/** Wrap known terms in bodyHtml with a marker element the client can bind. */
-export function highlightTerms(bodyHtml: string): string {
-  let html = bodyHtml;
-  for (const { term, pattern } of TERM_PATTERNS) {
-    html = html.replace(pattern, (match) => `<mark class="law-term" data-term="${term}" role="button" tabindex="0">${match}</mark>`);
+/**
+ * Mark the first occurrence of each term with `render(matchedText)`, matching
+ * only inside text (never tag markup) and never inside an existing <mark>.
+ * Structural replacement for the old regex-over-raw-HTML approach.
+ */
+function tokenize(html: string): { tag: boolean; text: string }[] {
+  return html
+    .split(/(<[^>]*>)/)
+    .filter((piece) => piece !== "")
+    .map((piece) => ({ tag: piece.startsWith("<"), text: piece }));
+}
+
+function markFirstOccurrences(
+  bodyHtml: string,
+  entries: { term: string; render: (text: string) => string }[],
+): string {
+  const tokens = tokenize(bodyHtml);
+  // Longest term first so "financial institution" beats "institution".
+  const queue = [...entries].sort((a, b) => b.term.length - a.term.length);
+  for (const { term, render } of queue) {
+    const needle = term.toLowerCase();
+    let markDepth = 0;
+    for (let i = 0; i < tokens.length; i++) {
+      const { tag, text } = tokens[i];
+      if (tag) {
+        if (/^<mark[\s>]/i.test(text)) markDepth++;
+        else if (/^<\/mark/i.test(text)) markDepth = Math.max(0, markDepth - 1);
+        continue;
+      }
+      if (markDepth > 0 || text.length < needle.length) continue;
+      const lower = text.toLowerCase();
+      let at = lower.indexOf(needle);
+      while (at !== -1 && (isWordChar(text[at - 1]) || isWordChar(text[at + needle.length]))) {
+        at = lower.indexOf(needle, at + 1);
+      }
+      if (at === -1) continue;
+      const matched = text.slice(at, at + needle.length);
+      // Re-tokenize the insertion so later terms can't match inside its markup.
+      tokens.splice(
+        i,
+        1,
+        { tag: false, text: text.slice(0, at) },
+        ...tokenize(render(matched)),
+        { tag: false, text: text.slice(at + needle.length) },
+      );
+      break;
+    }
   }
-  return html;
+  return tokens.map((token) => token.text).join("");
+}
+
+/** Wrap curated terms of art in a dotted marker the client can bind. */
+export function highlightTerms(bodyHtml: string): string {
+  return markFirstOccurrences(
+    bodyHtml,
+    TERM_DEFINITIONS.map(({ term }) => ({
+      term,
+      render: (text) => `<mark class="law-term" data-term="${term}" role="button" tabindex="0">${text}</mark>`,
+    })),
+  );
+}
+
+/** Star statutory defined terms; the id keys the card the client shows. */
+export function markDefinedTerms(bodyHtml: string, terms: { id: number; term: string }[]): string {
+  return markFirstOccurrences(
+    bodyHtml,
+    terms.map(({ id, term }) => ({
+      term,
+      render: (text) =>
+        `<mark class="law-term law-term-defined" data-def="${id}" role="button" tabindex="0">${text}<sup aria-hidden="true">*</sup></mark>`,
+    })),
+  );
 }
