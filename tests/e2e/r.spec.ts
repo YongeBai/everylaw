@@ -53,7 +53,7 @@ test("voting from arrows records to browser history with dissent framing", async
   await page.getByTestId("r-history-link").click();
   await expect(page).toHaveURL(/\/r\/history$/);
   await expect(page.getByTestId("history-list")).toContainText("18 U.S.C. § 700");
-  await expect(page.getByTestId("history-share")).toContainText("sections judged");
+  await expect(page.getByTestId("history-share")).toContainText(/section(s)? judged/);
 });
 
 test("comments carry the commenter's post vote and follow vote changes", async ({ page }) => {
