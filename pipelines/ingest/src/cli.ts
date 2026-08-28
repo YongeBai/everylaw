@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { downloadRelease, listTitleFiles } from './download.ts';
 import { parseUslmFile } from './parse.ts';
 import { ensureCorpus, Loader } from './load.ts';
+import { rebuildDefinedTerms } from './definitions.ts';
 
 const CACHE_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.cache');
 
@@ -76,6 +77,27 @@ program
         where id = ${run.id}
       `;
       throw err;
+    } finally {
+      await sql.end();
+    }
+  });
+
+program
+  .command('definitions')
+  .description('Extract statutory defined terms from ingested section text into defined_terms')
+  .option('--titles <list>', 'comma-separated title numbers to rebuild (default: all)')
+  .action(async (opts: { titles?: string }) => {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error('DATABASE_URL is not set');
+    const sql = postgres(url, { max: 2, prepare: false });
+    try {
+      const corpusId = await ensureCorpus(sql, 'usc', 'United States Code', 'us');
+      const titles = opts.titles?.split(',').map((t) => Number(t.trim()));
+      const started = Date.now();
+      const { sections, inserted } = await rebuildDefinedTerms(sql, corpusId, titles);
+      console.log(
+        `defined terms: ${inserted} terms from ${sections} sections, ${((Date.now() - started) / 1000).toFixed(1)}s`,
+      );
     } finally {
       await sql.end();
     }

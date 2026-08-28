@@ -57,6 +57,13 @@
       "when": 1787533500000,
       "tag": "0007_remove_take_stance",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787533800000,
+      "tag": "0008_defined_terms",
+      "breakpoints": true
     }
   ]
 }

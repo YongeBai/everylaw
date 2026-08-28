@@ -7,7 +7,7 @@ import { directionToVote } from "./vote-sync";
 
 export type LawSummary = {
   id: number; identifier: string; citation: string; num: string; heading: string;
-  sortKey: string;
+  sortKey: string; levelPath: string | null;
   status: string; featuredTier: number; bodyText: string; bodyHtml: string;
   sourceCredit: string | null; enactingPl: string | null; enactedDate: string | null;
   wordCount: number; title: number;
@@ -17,6 +17,7 @@ export type LawSummary = {
 function mapLaw(row: Record<string, unknown>): LawSummary {
   return {
     id: Number(row.id), identifier: String(row.identifier), citation: String(row.citation), num: String(row.num), heading: String(row.heading), sortKey: String(row.sort_key),
+    levelPath: row.level_path ? String(row.level_path) : null,
     status: String(row.status), featuredTier: Number(row.featured_tier), bodyText: String(row.body_text ?? ""), bodyHtml: String(row.body_html ?? ""),
     sourceCredit: row.source_credit ? String(row.source_credit) : null, enactingPl: row.enacting_pl ? String(row.enacting_pl) : null,
     enactedDate: row.enacted_date ? String(row.enacted_date) : null, wordCount: Number(row.word_count),
@@ -97,6 +98,89 @@ export async function searchLaws(query: string, limit = 30): Promise<LawSummary[
 export async function getAiContent(nodeId: number) {
   const rows = await db.execute(sql`SELECT id, content_type, body_md FROM ai_contents WHERE node_id=${nodeId} AND status='published' ORDER BY id DESC`);
   return Object.fromEntries(rows.map((row) => [String(row.content_type), { id: Number(row.id), body: String(row.body_md) }]));
+}
+
+export type DefinedTerm = {
+  id: number; term: string; definition: string;
+  scopeType: string; // 'title' | 'chapter' | … — how far the definition reaches
+  citation: string; num: string; heading: string | null; identifier: string; title: number;
+};
+
+function mapDefinedTerm(row: Record<string, unknown>): DefinedTerm {
+  return {
+    id: Number(row.id), term: String(row.term), definition: String(row.definition_text),
+    scopeType: String(row.scope_type), citation: String(row.citation), num: String(row.num),
+    heading: row.heading ? String(row.heading) : null, identifier: String(row.identifier),
+    title: titleFromIdentifier(String(row.identifier)),
+  };
+}
+
+/**
+ * Statutory defined terms that reach `law` from an ancestor scope (title,
+ * chapter, …) — the ones worth starring in its text. Terms the section defines
+ * itself are excluded (no self-stars, and a local redefinition wins over an
+ * inherited one). Narrowest scope first so the JS dedupe keeps it.
+ */
+export async function getDefinedTermsInScope(law: LawSummary): Promise<DefinedTerm[]> {
+  if (!law.levelPath) return [];
+  const rows = await db.execute(sql`
+    SELECT dt.id, dt.term, dt.definition_text, s.node_type AS scope_type,
+      d.citation, d.num, d.heading, d.identifier
+    FROM defined_terms dt
+    JOIN law_nodes s ON s.id = dt.scope_node_id
+    JOIN law_nodes d ON d.id = dt.node_id
+    WHERE dt.node_id <> ${law.id} AND d.status = 'active'
+      AND ${law.levelPath} LIKE s.level_path || '.%'
+      AND lower(dt.term) NOT IN (SELECT lower(term) FROM defined_terms WHERE node_id = ${law.id})
+    ORDER BY length(s.level_path) DESC, length(dt.term) DESC
+    LIMIT 300`);
+  const seen = new Set<string>();
+  return rows.map(mapDefinedTerm).filter((term) => {
+    const key = term.term.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+export type WikiSection = {
+  citation: string; num: string; heading: string | null; identifier: string; title: number;
+  terms: { id: number; term: string; definition: string; scopeType: string; scopeCitation: string | null }[];
+};
+
+/** One wiki page of a title's defined terms, grouped by defining section in reading order. */
+export async function getTitleWikiTerms(titleNum: number, limit: number, offset: number) {
+  const prefix = `/us/usc/t${titleNum}/s%`;
+  const [countRows, rows] = await Promise.all([
+    db.execute(sql`SELECT count(*)::int AS count FROM defined_terms dt JOIN law_nodes d ON d.id = dt.node_id
+      WHERE d.identifier LIKE ${prefix} AND d.status = 'active'`),
+    db.execute(sql`
+      SELECT dt.id, dt.term, dt.definition_text, s.node_type AS scope_type, s.citation AS scope_citation,
+        d.citation, d.num, d.heading, d.identifier
+      FROM defined_terms dt
+      JOIN law_nodes d ON d.id = dt.node_id
+      JOIN law_nodes s ON s.id = dt.scope_node_id
+      WHERE d.identifier LIKE ${prefix} AND d.status = 'active'
+      ORDER BY d.sort_key, lower(dt.term) LIMIT ${limit} OFFSET ${offset}`),
+  ]);
+  const sections: WikiSection[] = [];
+  for (const row of rows) {
+    const identifier = String(row.identifier);
+    let section = sections[sections.length - 1];
+    if (!section || section.identifier !== identifier) {
+      section = {
+        citation: String(row.citation), num: String(row.num),
+        heading: row.heading ? String(row.heading) : null,
+        identifier, title: titleFromIdentifier(identifier), terms: [],
+      };
+      sections.push(section);
+    }
+    section.terms.push({
+      id: Number(row.id), term: String(row.term), definition: String(row.definition_text),
+      scopeType: String(row.scope_type), scopeCitation: row.scope_citation ? String(row.scope_citation) : null,
+    });
+  }
+  return { termCount: Number(countRows[0]!.count), sections };
 }
 
 // A take's side badge is the commenter's current vote on the law, not a stored

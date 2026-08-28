@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAiContent, getLaw, getLawNavigation, getTakes } from "@/lib/data";
+import { getAiContent, getDefinedTermsInScope, getLaw, getLawNavigation, getTakes } from "@/lib/data";
 import { viewerVoterHash } from "@/lib/viewer";
 import { parseHistory } from "@/lib/history";
-import { highlightTerms } from "@/lib/terms";
-import { agePhrase, lawUrl, officialSourceUrl, subredditUrl } from "@/lib/reddit-format";
+import { highlightTerms, markDefinedTerms } from "@/lib/terms";
+import { agePhrase, lawUrl, officialSourceUrl, subredditUrl, wikiUrl } from "@/lib/reddit-format";
 import { subredditSlug } from "@/lib/title-names";
 import { RHeader } from "@/components/r/header";
 import { VoteArrows } from "@/components/r/vote-arrows";
@@ -27,10 +27,16 @@ export default async function RPostPage({ params }: Props) {
   const { titleSlug, section } = await params;
   const law = await getLaw(titleSlug, decodeURIComponent(section));
   if (!law) notFound();
-  const [content, takes, navigation] = await Promise.all([getAiContent(law.id), viewerVoterHash().then((hash) => getTakes(law.id, hash)), getLawNavigation(law)]);
+  const [content, takes, navigation, definedTerms] = await Promise.all([getAiContent(law.id), viewerVoterHash().then((hash) => getTakes(law.id, hash)), getLawNavigation(law), getDefinedTermsInScope(law)]);
   const history = parseHistory(law.sourceCredit);
   const url = lawUrl(law);
   const sourceUrl = officialSourceUrl(law.title, law.num);
+  const titleWikiUrl = wikiUrl(law.title);
+  const officialHtml = highlightTerms(markDefinedTerms(law.bodyHtml, definedTerms));
+  // The card only needs the terms that actually got starred in this body.
+  const starredTerms = definedTerms
+    .filter((term) => officialHtml.includes(`data-def="${term.id}"`))
+    .map((term) => ({ id: term.id, term: term.term, definition: term.definition, scopeType: term.scopeType, citation: term.citation, heading: term.heading, url: lawUrl(term) }));
 
   return <div className={styles.page}>
     <RHeader activeTitle={titleSlug} />
@@ -58,7 +64,7 @@ export default async function RPostPage({ params }: Props) {
 
             <section className={styles.section} data-testid="post-official">
               <div className={styles.sectionHead}>the actual law <a href={sourceUrl} target="_blank" rel="noopener">source: uscode.house.gov ↗</a><span className={styles.aiBadge}>public domain</span></div>
-              <div className={styles.sectionBody}><OfficialText html={highlightTerms(law.bodyHtml)} />
+              <div className={styles.sectionBody}><OfficialText html={officialHtml} statutoryTerms={starredTerms} wikiUrl={titleWikiUrl} />
                 {law.sourceCredit && <p style={{ marginTop: 10, fontSize: 11, color: "#888" }}>Source credit: {law.sourceCredit}</p>}</div>
             </section>
 
@@ -89,6 +95,7 @@ export default async function RPostPage({ params }: Props) {
             {navigation.previous && <li><Link href={lawUrl(navigation.previous)}>{navigation.previous.citation} — {navigation.previous.heading}</Link></li>}
             {navigation.next && <li><Link href={lawUrl(navigation.next)}>{navigation.next.citation} — {navigation.next.heading}</Link></li>}
             {navigation.related.map((item) => <li key={item.id}><Link href={lawUrl(item)}>{item.citation} — {item.heading}</Link></li>)}
+            <li><Link href={titleWikiUrl}>wiki: defined terms in this title</Link></li>
           </ul>
         </div></div>
       </aside>

@@ -56,7 +56,8 @@ export default async function Subreddit({ params, searchParams }: Props) {
           <p><b>Title {titleNum} — {info.heading}.</b> Every section of this title is a post: read it, read its translation and history, then vote keep or dissolve.</p>
           <div className={styles.sideStat}><span>sections</span><b>{info.sectionCount.toLocaleString()}</b></div>
           <div className={styles.sideStat}><span>moderator</span><b>Congress (inactive)</b></div>
-          <p style={{ marginTop: 8 }}><a href={`https://uscode.house.gov/browse/prelim@title${titleNum}`} target="_blank" rel="noopener">official record at uscode.house.gov ↗</a></p>
+          <p style={{ marginTop: 8 }}><Link href={`/r/${canonical}/wiki`}>wiki: defined terms in this title</Link></p>
+          <p><a href={`https://uscode.house.gov/browse/prelim@title${titleNum}`} target="_blank" rel="noopener">official record at uscode.house.gov ↗</a></p>
         </div></div>
       </aside>
     </div>

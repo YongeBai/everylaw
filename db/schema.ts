@@ -219,6 +219,35 @@ export const nodeTags = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// Statutory defined terms (migration 0008_defined_terms.sql — definitions
+// mirror it). Derived from section text; rebuilt by `ingest definitions`.
+// ---------------------------------------------------------------------------
+export const definedTerms = pgTable(
+  'defined_terms',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    corpusId: smallint('corpus_id')
+      .notNull()
+      .references(() => corpora.id),
+    // Defining section.
+    nodeId: bigint('node_id', { mode: 'number' })
+      .notNull()
+      .references(() => lawNodes.id),
+    // Ancestor node the definition reaches ("this title" → title node, …).
+    scopeNodeId: bigint('scope_node_id', { mode: 'number' })
+      .notNull()
+      .references(() => lawNodes.id),
+    term: text('term').notNull(),
+    definitionText: text('definition_text').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('defined_terms_node_term_uq').on(t.nodeId, sql`lower(${t.term})`),
+    index('defined_terms_scope_idx').on(t.scopeNodeId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
 // Ingestion audit log
 // ---------------------------------------------------------------------------
 export const ingestionRuns = pgTable('ingestion_runs', {
