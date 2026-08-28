@@ -1,6 +1,6 @@
 /** Pure formatting helpers shared by server and client — no DB imports here. */
 
-import { subredditSlug } from "./title-names";
+import { subredditPathSlug } from "./title-names";
 
 /** Title number from a USLM identifier like '/us/usc/t18/s1111'. */
 export function titleFromIdentifier(identifier: string): number {
@@ -16,17 +16,17 @@ export function parseSectionParam(section: string): { num: string; suffix: strin
 /** Canonical URL of a law's page. The single link builder for the whole app. */
 export function lawUrl(law: { title: number; num: string; identifier: string }): string {
   const suffix = law.identifier.match(/(~\d+)$/)?.[1] ?? "";
-  return `/r/${subredditSlug(law.title)}/${encodeURIComponent(`${law.num}${suffix}`)}`;
+  return `/r/${subredditPathSlug(law.title)}/${encodeURIComponent(`${law.num}${suffix}`)}`;
 }
 
 /** Canonical URL of a title's subreddit page. */
 export function subredditUrl(title: number): string {
-  return `/r/${subredditSlug(title)}`;
+  return `/r/${subredditPathSlug(title)}`;
 }
 
-/** Canonical URL of a title's wiki — the index of its statutory defined terms. */
+/** Canonical URL of a title's wiki tab — the index of its statutory defined terms. */
 export function wikiUrl(title: number): string {
-  return `/r/${subredditSlug(title)}/wiki`;
+  return `/r/${subredditPathSlug(title)}?view=wiki`;
 }
 
 export function officialSourceUrl(title: number, num: string): string {

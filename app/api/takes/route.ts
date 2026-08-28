@@ -13,6 +13,8 @@ export async function POST(request: NextRequest) {
   try {
     if (!isSameOrigin(request)) return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
     const input = schema.parse(await request.json()); const identity = requestIdentity(request);
+    const target = await db.execute(sql`SELECT 1 FROM law_nodes WHERE id=${input.nodeId} AND node_type='section'`);
+    if (!target[0]) return NextResponse.json({ error: "Section not found" }, { status: 404 });
     if (!await checkRateLimit("take", identity)) return NextResponse.json({ error: "Take limit reached. Try again later." }, { status: 429 });
     if (blocked.test(input.body)) return NextResponse.json({ error: "That argument did not pass moderation." }, { status: 422 });
     if (input.parentId) {
@@ -26,9 +28,10 @@ export async function POST(request: NextRequest) {
     await recordInteraction("take", identity);
     const direction = voteRows[0]?.direction;
     const row = rows[0]!;
-    return NextResponse.json({ take: { id: Number(row.id), body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count), parentId: row.parent_id === null ? null : Number(row.parent_id), createdAt: String(row.created_at), vote: directionToVote(direction === null || direction === undefined ? null : String(direction)), mine: true } }, { status: 201 });
+    return NextResponse.json({ take: { id: Number(row.id), body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count), parentId: row.parent_id === null ? null : Number(row.parent_id), createdAt: String(row.created_at), vote: directionToVote(direction === null || direction === undefined ? null : String(direction)), myVote: null, mine: true } }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Use 3–280 characters." }, { status: 400 });
+    if (error instanceof Error && error.message.includes("Load a page")) return NextResponse.json({ error: error.message }, { status: 403 });
     console.error("take failed", error); return NextResponse.json({ error: "Could not publish your argument" }, { status: 500 });
   }
 }

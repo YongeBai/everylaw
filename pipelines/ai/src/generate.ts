@@ -13,12 +13,16 @@ const options = new Command()
   .option("--publish", "publish instead of creating drafts")
   .parse().opts<{ tier: string; limit: string; provider: "local"|"anthropic"; type?: string; publish?: boolean }>();
 const validTypes: ContentType[] = ["summary", "explanation", "origin", "facts"];
-// v2: explanation is a structured plain-English translation; origin may use
-// well-established history of the enacting act, clearly hedged.
-const promptVersions: Record<ContentType, string> = { summary: "v1", explanation: "v2", origin: "v2", facts: "v1" };
+if (!(["local", "anthropic"] as const).includes(options.provider)) throw new Error(`Invalid provider: ${options.provider}`);
+const tier = Number(options.tier);
+const limit = Number(options.limit);
+if (!Number.isInteger(tier) || tier < 0 || tier > 2) throw new Error(`Invalid tier: ${options.tier}`);
+if (!Number.isInteger(limit) || limit < 1) throw new Error(`Invalid limit: ${options.limit}`);
+// Keep these explicit so every generated row records the prompt file used.
+const promptVersions: Record<ContentType, string> = { summary: "v2", explanation: "v3", origin: "v2", facts: "v1" };
 if (options.type && !validTypes.includes(options.type as ContentType)) throw new Error(`Invalid content type: ${options.type}`);
-const types: ContentType[] = options.type ? [options.type as ContentType] : Number(options.tier) >= 2 ? validTypes : ["summary"];
-const rows = await db.execute(sql`SELECT id, citation, heading, body_text, source_credit, enacting_pl, enacted_date, word_count, amendment_count FROM law_nodes WHERE node_type='section' AND featured_tier >= ${Number(options.tier)} ORDER BY sort_key LIMIT ${Number(options.limit)}`);
+const types: ContentType[] = options.type ? [options.type as ContentType] : tier >= 2 ? validTypes : ["summary"];
+const rows = await db.execute(sql`SELECT id, citation, heading, body_text, source_credit, enacting_pl, enacted_date, word_count, amendment_count FROM law_nodes WHERE node_type='section' AND featured_tier >= ${tier} ORDER BY sort_key LIMIT ${limit}`);
 
 type Generated = { body: string; model: string; input: number; output: number; truncated?: boolean };
 
@@ -58,7 +62,18 @@ for (const row of rows) {
     const errors = lintContent(type, generated.body);
     if (generated.truncated) errors.push("output reached the token limit");
     if (errors.length) { skipped += 1; console.warn(`${law.citation} ${type}: ${errors.join(", ")}`); continue; }
-    await db.execute(sql`INSERT INTO ai_contents(node_id, content_type, body_md, model, prompt_version, input_tokens, output_tokens, status) VALUES (${Number(row.id)}, ${type}::ai_content_type, ${generated.body}, ${generated.model}, ${`${type}.${promptVersions[type]}`}, ${generated.input}, ${generated.output}, ${options.publish ? sql`'published'::content_status` : sql`'draft'::content_status`})`);
+    const nodeId = Number(row.id);
+    const promptVersion = `${type}.${promptVersions[type]}`;
+    if (options.publish) {
+      // The partial unique index allows one published row per node/type. Keep
+      // replacement atomic so a failed insert cannot leave the node unpublished.
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`UPDATE ai_contents SET status='draft' WHERE node_id=${nodeId} AND content_type=${type}::ai_content_type AND status='published'`);
+        await tx.execute(sql`INSERT INTO ai_contents(node_id, content_type, body_md, model, prompt_version, input_tokens, output_tokens, status) VALUES (${nodeId}, ${type}::ai_content_type, ${generated.body}, ${generated.model}, ${promptVersion}, ${generated.input}, ${generated.output}, 'published')`);
+      });
+    } else {
+      await db.execute(sql`INSERT INTO ai_contents(node_id, content_type, body_md, model, prompt_version, input_tokens, output_tokens, status) VALUES (${nodeId}, ${type}::ai_content_type, ${generated.body}, ${generated.model}, ${promptVersion}, ${generated.input}, ${generated.output}, 'draft')`);
+    }
     created += 1;
   }
 }

@@ -41,4 +41,17 @@ describe("markDefinedTerms", () => {
     expect(out).toContain('data-def="2"');
     expect(out).toContain('data-term="whoever"');
   });
+
+  it("does not dot a curated term in its own defining section", () => {
+    const html = "<p>A food shall be deemed to be misbranded when its labeling is false.</p>";
+    const out = highlightTerms(html, { title: 21, section: "343" });
+    expect(out).not.toContain('data-term="misbranded"');
+  });
+
+  it("does not dot terms already covered by statutory definitions", () => {
+    const html = "<p>Interstate commerce appears more than once in interstate commerce.</p>";
+    const out = highlightTerms(markDefinedTerms(html, [{ id: 4, term: "interstate commerce" }]), { excludeTerms: ["interstate commerce"] });
+    expect(out).toContain('data-def="4"');
+    expect(out).not.toContain('data-term="interstate commerce"');
+  });
 });

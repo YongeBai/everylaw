@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { getAiContent, getDefinedTermsInScope, getLaw, getLawNavigation, getTakes } from "@/lib/data";
+import { notFound, permanentRedirect } from "next/navigation";
+import { getAiContent, getDefinedTermsInScope, getLaw, getLawNavigation, getTakes, getTermsDefinedByLaw } from "@/lib/data";
 import { viewerVoterHash } from "@/lib/viewer";
 import { parseHistory } from "@/lib/history";
 import { highlightTerms, markDefinedTerms } from "@/lib/terms";
 import { agePhrase, lawUrl, officialSourceUrl, subredditUrl, wikiUrl } from "@/lib/reddit-format";
 import { subredditSlug } from "@/lib/title-names";
-import { RHeader } from "@/components/r/header";
-import { VoteArrows } from "@/components/r/vote-arrows";
-import { OfficialText } from "@/components/r/official-text";
-import { Comments } from "@/components/r/comments";
-import { CitationText } from "@/components/r/citation-text";
+import { RHeader } from "@/components/reader/header";
+import { VoteArrows } from "@/components/reader/vote-arrows";
+import { OfficialText } from "@/components/reader/official-text";
+import { Comments } from "@/components/reader/comments";
+import { CitationText } from "@/components/reader/citation-text";
 import { linkSectionReferencesInHtml } from "@/lib/citations";
-import styles from "../../reddit.module.css";
+import styles from "../../../reader.module.css";
 
 type Props = { params: Promise<{ titleSlug: string; section: string }> };
 export const dynamic = "force-dynamic";
@@ -29,12 +29,17 @@ export default async function RPostPage({ params }: Props) {
   const { titleSlug, section } = await params;
   const law = await getLaw(titleSlug, decodeURIComponent(section));
   if (!law) notFound();
-  const [content, takes, navigation, definedTerms] = await Promise.all([getAiContent(law.id), viewerVoterHash().then((hash) => getTakes(law.id, hash)), getLawNavigation(law), getDefinedTermsInScope(law)]);
-  const history = parseHistory(law.sourceCredit);
   const url = lawUrl(law);
+  const requestedUrl = `/r/${titleSlug}/${encodeURIComponent(decodeURIComponent(section))}`;
+  if (requestedUrl !== url) permanentRedirect(url);
+  const [content, takes, navigation, definedTerms, locallyDefinedTerms] = await Promise.all([getAiContent(law.id), viewerVoterHash().then((hash) => getTakes(law.id, hash)), getLawNavigation(law), getDefinedTermsInScope(law), getTermsDefinedByLaw(law.id)]);
+  const history = parseHistory(law.sourceCredit);
   const sourceUrl = officialSourceUrl(law.title, law.num);
   const titleWikiUrl = wikiUrl(law.title);
-  const officialHtml = highlightTerms(markDefinedTerms(linkSectionReferencesInHtml(law.bodyHtml, law.title), definedTerms));
+  const officialHtml = highlightTerms(
+    markDefinedTerms(linkSectionReferencesInHtml(law.bodyHtml, law.title), definedTerms),
+    { title: law.title, section: law.num, excludeTerms: [...locallyDefinedTerms, ...definedTerms.map((term) => term.term)] },
+  );
   // The card only needs the terms that actually got starred in this body.
   const starredTerms = definedTerms
     .filter((term) => officialHtml.includes(`data-def="${term.id}"`))

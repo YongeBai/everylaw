@@ -3,18 +3,18 @@ import { agePhrase, lawUrl, officialSourceUrl, subredditUrl } from "@/lib/reddit
 import { subredditSlug } from "@/lib/title-names";
 import { parseHistory } from "@/lib/history";
 import { highlightTerms } from "@/lib/terms";
-import { RHeader } from "@/components/r/header";
-import { VoteArrows } from "@/components/r/vote-arrows";
-import { OfficialText } from "@/components/r/official-text";
-import { Comments } from "@/components/r/comments";
-import { CitationText } from "@/components/r/citation-text";
+import { RHeader } from "@/components/reader/header";
+import { VoteArrows } from "@/components/reader/vote-arrows";
+import { OfficialText } from "@/components/reader/official-text";
+import { Comments } from "@/components/reader/comments";
+import { CitationText } from "@/components/reader/citation-text";
 import { linkSectionReferencesInHtml } from "@/lib/citations";
 import type { Docket } from "./pick";
-import styles from "@/app/r/reddit.module.css";
+import styles from "@/app/(reader)/reader.module.css";
 
 /** Experimental docket design: old-reddit vernacular, distinct from a normal post. */
 export function DocketTrial({ docket }: { docket: Docket }) {
-  const { law, summary, explanation, origin, takes, yesterday, todayKey } = docket;
+  const { law, summary, explanation, origin, takes, locallyDefinedTerms, yesterday, todayKey } = docket;
   const url = lawUrl(law);
   const trialDate = new Date(`${todayKey}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const total = law.keepCount + law.dissolveCount;
@@ -40,7 +40,7 @@ export function DocketTrial({ docket }: { docket: Docket }) {
             </div>}
             <div className={styles.section} style={{ marginTop: 10 }}>
               <div className={styles.sectionHead}>the actual law <a href={officialSourceUrl(law.title, law.num)} target="_blank" rel="noopener">source ↗</a></div>
-              <div className={styles.sectionBody}><OfficialText html={highlightTerms(linkSectionReferencesInHtml(law.bodyHtml, law.title))} title={law.title} /></div>
+              <div className={styles.sectionBody}><OfficialText html={highlightTerms(linkSectionReferencesInHtml(law.bodyHtml, law.title), { title: law.title, section: law.num, excludeTerms: locallyDefinedTerms })} title={law.title} /></div>
             </div>
             {(history.length > 0 || origin) && <div className={styles.section} style={{ marginTop: 10 }}>
               <div className={styles.sectionHead}>history</div>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { RHeader } from "@/components/r/header";
-import { RandomFeed } from "@/components/r/random-feed";
-import styles from "../reddit.module.css";
+import { RHeader } from "@/components/reader/header";
+import { RandomFeed } from "@/components/reader/random-feed";
+import styles from "../reader.module.css";
 
 export const metadata: Metadata = { title: "Random sections", description: "An endless stack of random sections of the U.S. Code. Read one, then keep or dissolve it." };
 

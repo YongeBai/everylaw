@@ -16,8 +16,8 @@ export function lintContent(type: ContentType, body: string): string[] {
   if (!body.trim()) errors.push("empty output");
   if (/\bas an ai\b/i.test(body)) errors.push("AI self-reference");
   if (/consult (a|your) lawyer/i.test(body) && type === "summary") errors.push("boilerplate in summary");
-  if (type === "summary" && (body.length > 500 || words > 75)) errors.push("summary too long");
-  if (type === "explanation" && (words < 100 || words > 350)) errors.push("explanation outside length bounds");
+  if (type === "summary" && (body.length > 500 || words > 70)) errors.push("summary too long");
+  if (type === "explanation" && (words < 100 || words > 380)) errors.push("explanation outside length bounds");
   if (type === "origin" && words > 260) errors.push("origin too long");
   if (type === "facts") {
     const bullets = body.split("\n").filter((line) => line.trimStart().startsWith("- ")).length;

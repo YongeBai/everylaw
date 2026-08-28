@@ -22,16 +22,36 @@ test("a section never stars a term it defines itself", async ({ page }) => {
   await expect(page.locator("[data-def]", { hasText: "financial institution" })).toHaveCount(0);
 });
 
-test("the title wiki lists definitions by section and paginates", async ({ page }) => {
-  await page.goto("/r/title-18/wiki");
-  await expect(page).toHaveURL(/title-18-CRIMES-AND-CRIMINAL-PROCEDURE\/wiki/);
+test("a section never dots a term it defines itself", async ({ page }) => {
+  await page.goto("/r/title-21/343");
+  await expect(page.locator('[data-term="misbranded"]')).toHaveCount(0);
+});
+
+test("the title wiki is the final title tab, lists definitions, and paginates", async ({ page }) => {
+  await page.goto("/r/title-18?view=wiki");
+  await expect(page).toHaveURL(/\/r\/title-18\?view=wiki/);
   await expect(page.getByTestId("wiki-title")).toContainText("r/title-18-CRIMES-AND-CRIMINAL-PROCEDURE wiki");
+  await expect(page.getByTestId("wiki-tab")).toHaveAttribute("data-active", "true");
+  const followsOrder = await page.evaluate(() => {
+    const order = document.querySelector('[data-testid="sort-order"]');
+    const wiki = document.querySelector('[data-testid="wiki-tab"]');
+    return Boolean(order && wiki && (order.compareDocumentPosition(wiki) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  expect(followsOrder).toBe(true);
   const first = page.getByTestId("wiki-section").first();
   await expect(first).toContainText("18 U.S.C. §");
   await expect(page.getByText("“mortgage lending business”", { exact: true })).toBeVisible();
   await page.getByTestId("wiki-pages").getByRole("link", { name: "next ›" }).click();
   await expect(page.getByTestId("wiki-pages")).toContainText(/page 2 of/);
+  await expect(page).toHaveURL(/view=wiki.*page=2/);
   // Entries link back to the defining section.
   await page.getByTestId("wiki-section").first().getByRole("link").first().click();
   await expect(page.getByTestId("official-text")).toBeVisible();
+});
+
+test("the retired wiki path redirects to the wiki tab", async ({ page, request }) => {
+  const response = await request.get("/r/title-18/wiki", { maxRedirects: 0 });
+  expect(response.status()).toBe(308);
+  await page.goto("/r/title-18/wiki");
+  await expect(page).toHaveURL(/\/r\/title-18\?view=wiki/);
 });

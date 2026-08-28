@@ -1,5 +1,3 @@
-import { lawUrl } from "./reddit-format";
-
 export type CitationPart = { text: string; href?: string };
 
 // Full citations work without context. Bare "section 7" and "§ 7" references
@@ -12,7 +10,7 @@ const SECTION_REFERENCE_RE = new RegExp(
 
 function sectionUrl(title: number, citedNum: string): string {
   const section = citedNum.split("(", 1)[0];
-  return lawUrl({ title, num: section, identifier: "" });
+  return `/cite/${title}/${encodeURIComponent(section)}`;
 }
 
 /** Split prose into text and internal links for every recognizable U.S. Code section reference. */

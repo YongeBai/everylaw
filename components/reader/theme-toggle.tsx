@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import styles from "@/app/r/reddit.module.css";
+import styles from "@/app/(reader)/reader.module.css";
 
 /**
  * RES-style night mode. Light is the default; choosing night mode stamps

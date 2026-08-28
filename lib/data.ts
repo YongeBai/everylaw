@@ -44,7 +44,18 @@ export const getLaw = cache(async (title: string, section: string): Promise<LawS
   const titleNum = titleNumberFromSlug(title);
   if (!titleNum) return null;
   const { num, suffix } = parseSectionParam(section);
-  const rows = await db.execute(sql`${lawSelect} WHERE n.node_type='section' AND n.identifier LIKE ${`/us/usc/t${titleNum}/%`} AND n.num ILIKE ${num} AND (${suffix}='' OR n.identifier LIKE ${`%${suffix}`}) ORDER BY n.identifier LIMIT 1`);
+  let rows = await db.execute(sql`${lawSelect} WHERE n.node_type='section' AND n.identifier LIKE ${`/us/usc/t${titleNum}/%`} AND n.num ILIKE ${num} AND (${suffix}='' OR n.identifier LIKE ${`%${suffix}`}) ORDER BY n.identifier LIMIT 1`);
+  // The Code sometimes stores a run of repealed sections as one record (for
+  // example Title 21 "§ 1 to 5"). A citation to any member resolves to it.
+  if (!rows[0] && /^\d+$/.test(num) && suffix === "") {
+    const requested = Number(num);
+    rows = await db.execute(sql`${lawSelect}
+      WHERE n.node_type='section' AND n.identifier LIKE ${`/us/usc/t${titleNum}/%`}
+        AND n.num ~ '^[0-9]+ to [0-9]+$'
+        AND split_part(n.num, ' ', 1)::int <= ${requested}
+        AND split_part(n.num, ' ', 3)::int >= ${requested}
+      ORDER BY n.sort_key LIMIT 1`);
+  }
   return rows[0] ? mapLaw(rows[0]) : null;
 });
 
@@ -143,6 +154,12 @@ export async function getDefinedTermsInScope(law: LawSummary): Promise<DefinedTe
   });
 }
 
+/** Term names this section defines itself, used to suppress self-annotations. */
+export async function getTermsDefinedByLaw(nodeId: number): Promise<string[]> {
+  const rows = await db.execute(sql`SELECT DISTINCT term FROM defined_terms WHERE node_id = ${nodeId}`);
+  return rows.map((row) => String(row.term));
+}
+
 export type WikiSection = {
   citation: string; num: string; heading: string | null; identifier: string; title: number;
   terms: { id: number; term: string; definition: string; scopeType: string; scopeCitation: string | null }[];
@@ -186,8 +203,8 @@ export async function getTitleWikiTerms(titleNum: number, limit: number, offset:
 // A take's side badge is the commenter's current vote on the law, not a stored
 // stance — join votes by voter_hash so it stays in sync with vote changes.
 export async function getTakes(nodeId: number, viewerHash?: string | null) {
-  const rows = await db.execute(sql`SELECT t.id, t.body, t.upvote_count, t.downvote_count, t.parent_id, t.created_at, v.direction, t.voter_hash = ${viewerHash ?? ""} AS mine FROM takes t LEFT JOIN votes v ON v.node_id = t.node_id AND v.voter_hash = t.voter_hash WHERE t.node_id=${nodeId} AND t.moderation_status='published' ORDER BY t.upvote_count DESC, t.created_at DESC`);
-  return rows.map((row) => ({ id: Number(row.id), body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count ?? 0), parentId: row.parent_id === null || row.parent_id === undefined ? null : Number(row.parent_id), createdAt: String(row.created_at), vote: directionToVote(row.direction === null || row.direction === undefined ? null : String(row.direction)), mine: Boolean(row.mine) }));
+  const rows = await db.execute(sql`SELECT t.id, t.body, t.upvote_count, t.downvote_count, t.parent_id, t.created_at, v.direction, tv.direction AS viewer_vote, t.voter_hash = ${viewerHash ?? ""} AS mine FROM takes t LEFT JOIN votes v ON v.node_id = t.node_id AND v.voter_hash = t.voter_hash LEFT JOIN take_votes tv ON tv.take_id=t.id AND tv.voter_hash=${viewerHash ?? ""} WHERE t.node_id=${nodeId} AND t.moderation_status='published' ORDER BY t.upvote_count DESC, t.created_at DESC`);
+  return rows.map((row) => ({ id: Number(row.id), body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count ?? 0), parentId: row.parent_id === null || row.parent_id === undefined ? null : Number(row.parent_id), createdAt: String(row.created_at), vote: directionToVote(row.direction === null || row.direction === undefined ? null : String(row.direction)), myVote: row.viewer_vote === 1 || row.viewer_vote === "1" ? 1 as const : row.viewer_vote === -1 || row.viewer_vote === "-1" ? -1 as const : null, mine: Boolean(row.mine) }));
 }
 
 /** Live corpus stats for the homepage sidebar — one aggregate, request-cached. */

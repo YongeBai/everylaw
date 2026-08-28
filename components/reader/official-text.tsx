@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { CitationText } from "@/components/r/citation-text";
+import { CitationText } from "@/components/reader/citation-text";
 import { TERM_DEFINITIONS } from "@/lib/terms";
-import styles from "@/app/r/reddit.module.css";
+import styles from "@/app/(reader)/reader.module.css";
 
 /** A statutory defined term in scope for the displayed section (see lib/data). */
 export type StatutoryTerm = {

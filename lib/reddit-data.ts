@@ -44,21 +44,41 @@ const ORDERS: Record<RSort, ReturnType<typeof sql.raw>> = {
   order: sql.raw("n.sort_key"),
 };
 
+const POST_SELECT = sql.raw(`
+  SELECT n.id, n.identifier, n.citation, n.num, n.heading, n.status, n.enacted_date, n.enacting_pl,
+    ${VOTE_COLS},
+    COALESCE(t.cnt,0) comment_count, COALESCE(r.cnt,0) recent_votes
+  FROM law_nodes n
+  ${VOTE_JOIN}
+  LEFT JOIN LATERAL (SELECT count(*)::int cnt FROM takes WHERE node_id = n.id AND moderation_status='published') t ON true
+  LEFT JOIN LATERAL (SELECT count(*)::int cnt FROM votes WHERE node_id = n.id AND updated_at > now() - interval '7 days') r ON true`);
+
 export async function getRPosts(sort: RSort, titleNum?: number, limit = 25, offset = 0): Promise<RPost[]> {
   const scope = titleNum
     ? sql`n.identifier LIKE ${"/us/usc/t" + titleNum + "/%"}`
     : sql`(COALESCE(v.total_count,0) > 0 OR n.featured_tier >= 1)`;
   const rows = await db.execute(sql`
-    SELECT n.id, n.identifier, n.citation, n.num, n.heading, n.status, n.enacted_date, n.enacting_pl,
-      ${sql.raw(VOTE_COLS)},
-      COALESCE(t.cnt,0) comment_count, COALESCE(r.cnt,0) recent_votes
-    FROM law_nodes n
-    ${sql.raw(VOTE_JOIN)}
-    LEFT JOIN LATERAL (SELECT count(*)::int cnt FROM takes WHERE node_id = n.id AND moderation_status='published') t ON true
-    LEFT JOIN LATERAL (SELECT count(*)::int cnt FROM votes WHERE node_id = n.id AND updated_at > now() - interval '7 days') r ON true
+    ${POST_SELECT}
     WHERE n.node_type = 'section' AND ${scope}
     ORDER BY ${ORDERS[sort]}
     LIMIT ${limit} OFFSET ${offset}
+  `);
+  return rows.map(mapPost);
+}
+
+// Search results render through the same PostList as title/front pages, so
+// they carry the same fields (comment counts, weekly votes) as any feed row.
+export async function searchRPosts(query: string, limit = 30): Promise<RPost[]> {
+  if (!query.trim()) return [];
+  const rows = await db.execute(sql`
+    ${POST_SELECT}
+    WHERE n.node_type = 'section' AND n.identifier ~ '^/us/usc/t[0-9]+/' AND (
+      n.search_document @@ websearch_to_tsquery('english', ${query})
+      OR n.heading % ${query} OR n.citation ILIKE ${`%${query}%`}
+    )
+    ORDER BY ts_rank_cd(n.search_document, websearch_to_tsquery('english', ${query})) DESC,
+      similarity(n.heading, ${query}) DESC
+    LIMIT ${limit}
   `);
   return rows.map(mapPost);
 }

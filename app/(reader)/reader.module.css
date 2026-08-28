@@ -1,4 +1,4 @@
-/* Old-reddit vernacular carrying reference-grade content.
+/* Dense reader UI carrying reference-grade content.
    All colors come from the theme tokens in globals.css (light + night mode). */
 .page { min-height: 100svh; background: var(--bg); color: var(--text); font: 12px/1.45 Verdana, Arial, Helvetica, sans-serif; }
 .page a { color: var(--link); text-decoration: none; }
@@ -87,6 +87,12 @@
 
 /* Official text + terms */
 .officialBody { font-family: Georgia, "Times New Roman", serif; font-size: 14px; line-height: 1.7; }
+.officialBody :global(table) { width: min(100%, 650px); margin: 18px auto 24px; border-collapse: collapse; border-spacing: 0; border-top: 3px solid currentColor; border-bottom: 3px solid currentColor; line-height: 1.25; }
+.officialBody :global(th) { padding: 1px 16px; border-bottom: 1px solid currentColor; text-align: left; vertical-align: bottom; }
+.officialBody :global(td) { padding: 1px 16px; text-align: left; vertical-align: top; }
+.officialBody :global(th:first-child), .officialBody :global(td:first-child) { width: 46%; padding-left: 18px; }
+.officialBody :global(th:last-child), .officialBody :global(td:last-child) { padding-right: 18px; }
+.officialBody :global(table p) { margin: 0; }
 .officialBody :global(mark.law-term) { background: none; border-bottom: 1px dotted var(--orangered); cursor: pointer; color: inherit; }
 .officialBody :global(mark.law-term):hover { background: var(--term-hover); }
 .termDef { font-size: 12px; }
@@ -118,6 +124,8 @@
 .commentArrows button { border: 0; background: none; cursor: pointer; font-size: 11px; color: var(--faint); line-height: 1.2; padding: 0; }
 .commentArrows button:first-child:hover { color: var(--orangered); }
 .commentArrows button:last-child:hover { color: var(--periwinkle); }
+.commentArrows button:first-child[aria-pressed="true"] { color: var(--orangered); }
+.commentArrows button:last-child[aria-pressed="true"] { color: var(--periwinkle); }
 .commentMain { min-width: 0; }
 /* nested replies indent via structure, not a depth prop */
 .commentMain > .comment { margin-left: 18px; }
@@ -163,6 +171,11 @@
   .headerLinks { display: none; }
   .historyRow { grid-template-columns: 44px minmax(0, 1fr); }
   .dissent { display: none; }
+}
+
+@media (max-width: 560px) {
+  .officialBody :global(table) { font-size: 12px; }
+  .officialBody :global(th), .officialBody :global(td) { padding-right: 7px; padding-left: 7px; }
 }
 
 /* Today's trial (experimental "trial" design) */

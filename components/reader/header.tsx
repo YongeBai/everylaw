@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { titleNumberFromSlug, TOPBAR_TITLES } from "@/lib/title-names";
 import { subredditUrl } from "@/lib/reddit-format";
-import { ThemeToggle } from "@/components/r/theme-toggle";
-import styles from "@/app/r/reddit.module.css";
+import { ThemeToggle } from "@/components/reader/theme-toggle";
+import styles from "@/app/(reader)/reader.module.css";
 
 type Suggestion = { citation: string; heading: string; url: string };
 
@@ -19,8 +19,12 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       if (query.trim().length < 2) { setItems([]); return; }
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: controller.signal });
-      if (response.ok) setItems((await response.json()).results);
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: controller.signal });
+        if (response.ok) setItems((await response.json()).results);
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) setItems([]);
+      }
     }, 150);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [query]);
@@ -42,8 +46,8 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
       </form>
       <nav className={styles.headerLinks}>
         <Link href="/docket">today’s trial</Link>
-        <Link href="/r/random" data-testid="r-random-link">random section</Link>
-        <Link href="/r/history" data-testid="r-history-link">my votes</Link>
+        <Link href="/random" data-testid="random-link">random section</Link>
+        <Link href="/history" data-testid="history-link">my votes</Link>
         <ThemeToggle />
       </nav>
     </header>

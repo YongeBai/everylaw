@@ -7,7 +7,7 @@ test("browse and law reading flows", async ({ page }) => {
   await page.goto("/r");
   await expect(page.getByRole("link", { name: /r\/title-53-RESERVED/ })).toBeVisible();
   await page.getByRole("link", { name: /title-18-CRIMES-AND-CRIMINAL-PROCEDURE/ }).click();
-  await expect(page.getByTestId("subreddit-title")).toContainText(/crimes and criminal procedure/i);
+  await expect(page.getByTestId("title-page-heading")).toHaveText("r/title-18-CRIMES-AND-CRIMINAL-PROCEDURE");
   await page.getByTestId("subreddit-pages").getByRole("link", { name: "next ›" }).click();
   await expect(page.getByTestId("subreddit-pages")).toContainText(/page 2 of/);
   await page.goto("/r/title-18/700");
@@ -24,7 +24,7 @@ test("browse and law reading flows", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("the retired /us record redirects permanently into /r", async ({ page, request }) => {
+test("retired /us and top-level title routes redirect permanently into /r", async ({ page, request }) => {
   const response = await request.get("/us/title-18/700", { maxRedirects: 0 });
   expect(response.status()).toBe(308);
   expect(response.headers()["location"]).toContain("/r/title-18/700");
@@ -32,6 +32,19 @@ test("the retired /us record redirects permanently into /r", async ({ page, requ
   await expect(page).toHaveURL(/\/r\/title-18\/700$/);
   await page.goto("/us");
   await expect(page).toHaveURL(/\/r$/);
+  const legacy = await request.get("/title-18/700", { maxRedirects: 0 });
+  expect(legacy.status()).toBe(308);
+  expect(legacy.headers()["location"]).toContain("/r/title-18/700");
+});
+
+test("citation links resolve valid sections and send missing sections to search", async ({ page }) => {
+  await page.goto("/cite/1/1");
+  await expect(page).toHaveURL(/\/r\/title-1\/1$/);
+  await page.goto("/cite/21/1");
+  await expect(page).toHaveURL(/\/r\/title-21\/1(?:%20|\s)to(?:%20|\s)5$/);
+  await page.goto("/cite/21/999999999");
+  await expect(page).toHaveURL(/\/search\?q=21(?:\+|%20)U\.S\.C\./);
+  await expect(page.getByTestId("search-empty")).toBeVisible();
 });
 
 test("vote can change without duplicating the voter", async ({ page }) => {
@@ -45,6 +58,12 @@ test("vote can change without duplicating the voter", async ({ page }) => {
   await arrows.getByTestId(/^arrow-dissolve-/).click();
   await expect(arrows.getByTestId(/^arrow-dissolve-/)).toHaveAttribute("aria-pressed", "true");
   await expect(score).toHaveText((initial - 1).toLocaleString("en-US"));
+  await arrows.getByTestId(/^arrow-dissolve-/).click();
+  await expect(arrows.getByTestId(/^arrow-dissolve-/)).toHaveAttribute("aria-pressed", "false");
+  await expect(score).toHaveText(initial.toLocaleString("en-US"));
+  const nodeId = Number((await arrows.getAttribute("data-testid"))!.replace("arrows-", ""));
+  await expect.poll(() => page.evaluate((id) => !JSON.parse(localStorage.getItem("everylaw:votes") ?? "{}")[id], nodeId)).toBe(true);
+  await arrows.getByTestId(/^arrow-dissolve-/).click();
   await page.reload(); await expect(page.getByTestId(/^arrow-dissolve-/).first()).toHaveAttribute("aria-pressed", "true");
  
   await page.waitForLoadState("networkidle");
@@ -64,6 +83,8 @@ test("API rejects invalid origin and enforces vote rate limit", async ({ browser
   const context = await browser.newContext({ extraHTTPHeaders: { "x-forwarded-for": `e2e-${Date.now()}` } }); const page = await context.newPage(); await page.goto("/r/title-18/1111");
   const nodeId = Number((await page.getByTestId(/^arrows-\d+$/).first().getAttribute("data-testid"))!.replace("arrows-", ""));
   const rejected = await context.request.post("/api/vote", { headers: { origin: "https://attacker.invalid" }, data: { nodeId, direction: "keep" } }); expect(rejected.status()).toBe(403);
+  const missing = await page.evaluate(async () => (await fetch("/api/vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId: 2_147_483_647, direction: null }) })).status);
+  expect(missing).toBe(404);
   for (let index = 0; index < 30; index += 1) { const response = await page.evaluate(async ({ nodeId, index }) => { const result = await fetch("/api/vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, direction: index % 2 ? "keep" : "dissolve" }) }); return result.status; }, { nodeId, index }); expect(response).toBe(200); }
   const limited = await page.evaluate(async (nodeId) => (await fetch("/api/vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, direction: "keep" }) })).status, nodeId); expect(limited).toBe(429);
   await page.waitForLoadState("networkidle");

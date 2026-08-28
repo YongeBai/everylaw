@@ -38,6 +38,17 @@ export function recordLocalVote(vote: LocalVote): void {
   }
 }
 
+export function removeLocalVote(nodeId: number): void {
+  try {
+    const all = { ...readLocalVotes() };
+    delete all[nodeId];
+    cached = all;
+    window.localStorage.setItem(KEY, JSON.stringify(all));
+  } catch {
+    /* storage unavailable — the server-side vote is still removed */
+  }
+}
+
 /** Share of the public that voted AGAINST you at the time you voted (0–1). */
 export function dissentShare(vote: LocalVote): number {
   const total = vote.keepCount + vote.dissolveCount;

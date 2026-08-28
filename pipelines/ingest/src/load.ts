@@ -32,7 +32,10 @@ export function contentHash(n: ParsedNode): string {
   // fix (e.g. to source-credit parsing) never propagates on re-ingest.
   const canonical = JSON.stringify([
     n.identifier,
+    n.parentIdentifier,
     n.nodeType,
+    n.levelPath,
+    n.sortKey,
     n.num,
     n.heading,
     n.status,
@@ -43,6 +46,7 @@ export function contentHash(n: ParsedNode): string {
     n.enactingPl,
     n.enactedDate,
     n.amendmentCount,
+    n.wordCount,
   ]);
   return createHash('sha256').update(canonical).digest('hex');
 }
@@ -147,7 +151,7 @@ export class Loader {
     const missing = rows.map((r) => r.identifier as string).filter((i) => !ids.has(i));
     if (missing.length > 0) {
       const existing = await sql<{ id: number; identifier: string }[]>`
-        update law_nodes set last_seen_run_id = ${this.runId}
+        update law_nodes set last_seen_run_id = ${this.runId}, release_point = ${this.releasePoint}
         where corpus_id = ${this.corpusId} and identifier in ${sql(missing)}
         returning id, identifier
       `;

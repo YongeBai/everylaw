@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { onPostVote, type PostVote } from "@/lib/vote-sync";
-import { CitationText } from "@/components/r/citation-text";
-import styles from "@/app/r/reddit.module.css";
+import { CitationText } from "@/components/reader/citation-text";
+import styles from "@/app/(reader)/reader.module.css";
 
-export type RComment = { id: number; body: string; upvoteCount: number; downvoteCount: number; parentId: number | null; createdAt: string; vote: PostVote | null; mine: boolean };
+export type RComment = { id: number; body: string; upvoteCount: number; downvoteCount: number; parentId: number | null; createdAt: string; vote: PostVote | null; myVote: 1 | -1 | null; mine: boolean };
 
 function ago(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -48,7 +48,7 @@ function CommentForm({ nodeId, parentId, onPosted, onCancel }: { nodeId: number;
 
 function CommentNode({ comment, childrenOf, nodeId, title, onPosted, onVoted }: {
   comment: RComment; childrenOf: Map<number | null, RComment[]>; nodeId: number; title?: number;
-  onPosted: (comment: RComment) => void; onVoted: (id: number, up: number, down: number) => void;
+  onPosted: (comment: RComment) => void; onVoted: (id: number, up: number, down: number, myVote: 1 | -1 | null) => void;
 }) {
   const [replying, setReplying] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -56,15 +56,16 @@ function CommentNode({ comment, childrenOf, nodeId, title, onPosted, onVoted }: 
   const score = comment.upvoteCount - comment.downvoteCount;
 
   async function voteComment(direction: 1 | -1) {
-    const response = await fetch("/api/take-vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ takeId: comment.id, direction }) });
+    const nextDirection = comment.myVote === direction ? null : direction;
+    const response = await fetch("/api/take-vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ takeId: comment.id, direction: nextDirection }) });
     const result = await response.json();
-    if (response.ok) onVoted(comment.id, result.upvoteCount, result.downvoteCount);
+    if (response.ok) onVoted(comment.id, result.upvoteCount, result.downvoteCount, result.direction);
   }
 
   return <div className={styles.comment} data-testid={`comment-${comment.id}`}>
     <div className={styles.commentArrows}>
-      <button aria-label="upvote comment" data-testid={`cup-${comment.id}`} onClick={() => voteComment(1)}>▲</button>
-      <button aria-label="downvote comment" data-testid={`cdown-${comment.id}`} onClick={() => voteComment(-1)}>▼</button>
+      <button aria-label={comment.myVote === 1 ? "remove comment upvote" : "upvote comment"} aria-pressed={comment.myVote === 1} data-testid={`cup-${comment.id}`} onClick={() => voteComment(1)}>▲</button>
+      <button aria-label={comment.myVote === -1 ? "remove comment downvote" : "downvote comment"} aria-pressed={comment.myVote === -1} data-testid={`cdown-${comment.id}`} onClick={() => voteComment(-1)}>▼</button>
     </div>
     <div className={styles.commentMain}>
       <p className={styles.commentMeta}>
@@ -72,7 +73,7 @@ function CommentNode({ comment, childrenOf, nodeId, title, onPosted, onVoted }: 
         <VoteBadge id={comment.id} vote={comment.vote} />
         <b data-testid={`cscore-${comment.id}`}>{score} point{Math.abs(score) === 1 ? "" : "s"}</b>
         <span>({comment.upvoteCount}|{comment.downvoteCount})</span>
-        <span>{ago(comment.createdAt)}</span>
+        <time dateTime={comment.createdAt} suppressHydrationWarning>{ago(comment.createdAt)}</time>
       </p>
       {!collapsed && <>
         <p className={styles.commentBody}><CitationText title={title}>{comment.body}</CitationText></p>
@@ -108,7 +109,7 @@ export function Comments({ nodeId, initial, title }: { nodeId: number; initial: 
   }, [comments]);
 
   const onPosted = (comment: RComment) => setComments((now) => [...now, comment]);
-  const onVoted = (id: number, up: number, down: number) => setComments((now) => now.map((comment) => comment.id === id ? { ...comment, upvoteCount: up, downvoteCount: down } : comment));
+  const onVoted = (id: number, up: number, down: number, myVote: 1 | -1 | null) => setComments((now) => now.map((comment) => comment.id === id ? { ...comment, upvoteCount: up, downvoteCount: down, myVote } : comment));
   const roots = childrenOf.get(null) ?? [];
 
   return <section className={styles.comments} data-testid="comments">

@@ -4,9 +4,9 @@ export type PostVote = "up" | "down";
 
 const POST_VOTE_EVENT = "everylaw:post-vote";
 
-type Detail = { nodeId: number; vote: PostVote };
+type Detail = { nodeId: number; vote: PostVote | null };
 
-export function emitPostVote(nodeId: number, vote: PostVote) {
+export function emitPostVote(nodeId: number, vote: PostVote | null) {
   window.dispatchEvent(new CustomEvent<Detail>(POST_VOTE_EVENT, { detail: { nodeId, vote } }));
 }
 

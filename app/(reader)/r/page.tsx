@@ -3,8 +3,8 @@ import Link from "next/link";
 import { getTitles } from "@/lib/data";
 import { subredditUrl } from "@/lib/reddit-format";
 import { subredditSlug } from "@/lib/title-names";
-import { RHeader } from "@/components/r/header";
-import styles from "./reddit.module.css";
+import { RHeader } from "@/components/reader/header";
+import styles from "../reader.module.css";
 
 export const metadata: Metadata = { title: "all subreddits — every title of the U.S. Code", description: "Every title of the United States Code as a subreddit: browse all sections, read them in plain English, and vote keep or dissolve." };
 

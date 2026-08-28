@@ -2,8 +2,8 @@ import Link from "next/link";
 import { type RPost } from "@/lib/reddit-data";
 import { agePhrase, lawUrl, officialSourceUrl, subredditUrl } from "@/lib/reddit-format";
 import { subredditSlug } from "@/lib/title-names";
-import { VoteArrows } from "@/components/r/vote-arrows";
-import styles from "@/app/r/reddit.module.css";
+import { VoteArrows } from "@/components/reader/vote-arrows";
+import styles from "@/app/(reader)/reader.module.css";
 
 // A thumb only takes a vote color once the crowd has actually leaned (60/40
 // on 3+ votes) — color always means keep/dissolve, never decoration.
@@ -38,7 +38,7 @@ export function PostList({ posts, startRank = 1 }: { posts: RPost[]; startRank?:
             {voteTotal > 0 && <> · <span className={styles.keepInk}>{post.keepCount} keep</span> · <span className={styles.dissolveInk}>{post.dissolveCount} dissolve</span></>}
             {post.recentVotes > 0 && <> · {post.recentVotes} vote{post.recentVotes === 1 ? "" : "s"} this week</>}
           </p>
-          <p className={styles.buttons}><Link href={url}>{post.commentCount} argument{post.commentCount === 1 ? "" : "s"}</Link><Link href={url}>read the section</Link><span>share</span></p>
+          <p className={styles.buttons}><Link href={url}>{post.commentCount} argument{post.commentCount === 1 ? "" : "s"}</Link><span>share</span></p>
         </div>
       </article>;
     })}

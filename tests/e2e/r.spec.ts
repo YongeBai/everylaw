@@ -11,19 +11,18 @@ test("the front page of the U.S. Code lives at root with sort tabs", async ({ pa
   await expect(page.getByTestId("post-list")).toBeVisible();
 });
 
-test("/r lists every title as a subreddit", async ({ page }) => {
+test("/r lists every U.S. Code title community", async ({ page }) => {
   await page.goto("/r");
   await expect(page.getByTestId("title-list")).toBeVisible();
   await page.getByRole("link", { name: /title-18-CRIMES-AND-CRIMINAL-PROCEDURE/ }).click();
-  await expect(page.getByTestId("subreddit-title")).toContainText(/crimes and criminal procedure/i);
+  await expect(page.getByTestId("title-page-heading")).toHaveText("r/title-18-CRIMES-AND-CRIMINAL-PROCEDURE");
 });
 
 test("subreddits scope a title with sidebar info and related laws on posts", async ({ page }) => {
   await page.goto("/r/title-18");
-  // Bare title slugs redirect to the named canonical subreddit.
-  await expect(page).toHaveURL(/\/r\/title-18-CRIMES-AND-CRIMINAL-PROCEDURE$/);
-  await expect(page.getByTestId("subreddit-title")).toContainText("r/title-18-CRIMES-AND-CRIMINAL-PROCEDURE");
-  await expect(page.getByTestId("subreddit-title")).toContainText(/crimes and criminal procedure/i);
+  await expect(page).toHaveURL(/\/r\/title-18$/);
+  await expect(page.getByTestId("title-page-heading")).toContainText("r/title-18-CRIMES-AND-CRIMINAL-PROCEDURE");
+  await expect(page.getByTestId("title-page-heading")).not.toContainText(" — CRIMES AND CRIMINAL PROCEDURE");
   await expect(page.getByText("moderator")).toBeVisible();
   await page.goto("/r/title-18?sort=order");
   await expect(page.getByTestId("post-list").locator("article").first()).toContainText("18 U.S.C. § 1 —");
@@ -32,10 +31,23 @@ test("subreddits scope a title with sidebar info and related laws on posts", asy
   await expect(page.getByTestId("related-laws").getByRole("link").first()).toBeVisible();
 });
 
+test("title names are displayed but stay out of canonical URLs", async ({ page, request }) => {
+  const legacy = await request.get("/r/title-29-LABOR/1002", { maxRedirects: 0 });
+  expect(legacy.status()).toBe(308);
+  expect(legacy.headers()["location"]).toBe("/r/title-29/1002");
+
+  await page.goto("/r/title-29/1002");
+  await expect(page).toHaveURL(/\/r\/title-29\/1002$/);
+  await expect(page.getByText("r/title-29-LABOR", { exact: true })).toBeVisible();
+
+  await page.goto("/r/title-29");
+  await expect(page.getByTestId("title-page-heading")).toHaveText("r/title-29-LABOR");
+});
+
 test("a law post carries official text with term definitions, translation, and history", async ({ page }) => {
   await page.goto("/r/title-18/1111");
   const canonical = page.locator('link[rel="canonical"]');
-  await expect(canonical).toHaveAttribute("href", /\/r\/title-18-CRIMES-AND-CRIMINAL-PROCEDURE\/1111$/);
+  await expect(canonical).toHaveAttribute("href", /\/r\/title-18\/1111$/);
   await expect(page.getByTestId("post-official")).toContainText("uscode.house.gov");
   await expect(page.getByTestId("post-official")).toContainText("malice aforethought");
   await page.getByTestId("official-text").locator("mark.law-term").first().click();
@@ -43,6 +55,17 @@ test("a law post carries official text with term definitions, translation, and h
   await expect(page.getByTestId("post-translation")).toBeVisible();
   await expect(page.getByTestId("post-history")).toContainText("Enacted");
   await expect(page.getByTestId("post-history")).toContainText("1948");
+});
+
+test("statutory tables retain compact table structure", async ({ page }) => {
+  await page.goto("/r/title-26/1");
+  const table = page.getByTestId("official-text").locator("table").first();
+  await expect(table).toBeVisible();
+  await expect(table.locator("thead th")).toHaveCount(2);
+  await expect(table.locator("tbody tr")).toHaveCount(5);
+  await expect(table).toHaveCSS("display", "table");
+  await expect(table).toHaveCSS("border-collapse", "collapse");
+  await expect(table.locator("tbody tr").first().locator("td")).toHaveCount(2);
 });
 
 test("a term-of-art definition opens beside the clicked term and stays in view", async ({ page }) => {
@@ -53,7 +76,7 @@ test("a term-of-art definition opens beside the clicked term and stays in view",
   const definition = page.getByTestId("term-definition");
   await expect(definition).toContainText("Statutory drafting's universal subject");
   await expect(definition.getByRole("link", { name: "1 U.S.C. § 1" }))
-    .toHaveAttribute("href", "/r/title-1-GENERAL-PROVISIONS/1");
+    .toHaveAttribute("href", "/cite/1/1");
   await expect.poll(async () => {
     const [termBox, definitionBox] = await Promise.all([term.boundingBox(), definition.boundingBox()]);
     if (!termBox || !definitionBox) return false;
@@ -68,8 +91,11 @@ test("voting from arrows records to browser history with dissent framing", async
   const arrows = page.getByTestId(/^arrows-\d+$/).first();
   await arrows.getByRole("button", { name: /Dissolve/ }).click();
   await expect(arrows.getByRole("button", { name: /Dissolve/ })).toHaveAttribute("aria-pressed", "true");
-  await page.getByTestId("r-history-link").click();
-  await expect(page).toHaveURL(/\/r\/history$/);
+  await arrows.getByRole("button", { name: /Remove Dissolve vote/ }).click();
+  await expect(arrows.getByRole("button", { name: /Dissolve/ })).toHaveAttribute("aria-pressed", "false");
+  await arrows.getByRole("button", { name: /Dissolve/ }).click();
+  await page.getByTestId("history-link").click();
+  await expect(page).toHaveURL(/\/history$/);
   await expect(page.getByTestId("history-list")).toContainText("18 U.S.C. § 700");
   await expect(page.getByTestId("history-share")).toContainText(/section(s)? judged/);
 });
@@ -91,11 +117,23 @@ test("comments carry the commenter's post vote and follow vote changes", async (
   // Changing the post vote flips the badge on the viewer's own comments.
   await arrows.getByRole("button", { name: /Dissolve/ }).click();
   await expect(page.getByTestId(`cvote-${id}`)).toContainText("downvoted");
+  await arrows.getByRole("button", { name: /Remove Dissolve vote/ }).click();
+  await expect(page.getByTestId(`cvote-${id}`)).toHaveCount(0);
+  await arrows.getByRole("button", { name: /Dissolve/ }).click();
+  await expect(page.getByTestId(`cvote-${id}`)).toContainText("downvoted");
 
   await page.getByTestId(`cup-${id}`).click();
   await expect(page.getByTestId(`cscore-${id}`)).toContainText("1 point");
+  await expect(page.getByTestId(`cup-${id}`)).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId(`cup-${id}`).click();
+  await expect(page.getByTestId(`cscore-${id}`)).toContainText("0 points");
+  await expect(page.getByTestId(`cup-${id}`)).toHaveAttribute("aria-pressed", "false");
   await page.getByTestId(`cdown-${id}`).click();
   await expect(page.getByTestId(`cscore-${id}`)).toContainText("-1 point");
+  await expect(page.getByTestId(`cdown-${id}`)).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId(`cdown-${id}`).click();
+  await expect(page.getByTestId(`cscore-${id}`)).toContainText("0 points");
+  await expect(page.getByTestId(`cdown-${id}`)).toHaveAttribute("aria-pressed", "false");
 
   await page.getByTestId(`creply-${id}`).click();
   await page.getByTestId(`reply-body-${id}`).fill(`Disclosure still catches substitution ${stamp}`);
@@ -121,7 +159,7 @@ test("plain english leads the post and the actual law follows", async ({ page })
 });
 
 test("random feed deals laws endlessly and takes votes and cases", async ({ page }) => {
-  await page.goto("/r/random");
+  await page.goto("/random");
   await expect(page.locator('[data-testid^="random-card-"]').first()).toBeVisible();
   const initial = await page.locator('[data-testid^="random-card-"]').count();
   expect(initial).toBeGreaterThanOrEqual(3);
@@ -140,10 +178,10 @@ test("random feed deals laws endlessly and takes votes and cases", async ({ page
   await expect(card.getByText("your argument is live on the section's page")).toBeVisible();
 });
 
-test("header search suggests laws and routes into /r", async ({ page }) => {
+test("header search suggests laws and routes into canonical title pages", async ({ page }) => {
   await page.goto("/r");
   await page.getByTestId("r-search").fill("margarine");
   await expect(page.getByTestId("r-search-suggestions")).toBeVisible();
   await page.getByTestId("r-search-suggestions").getByRole("button", { name: /21 U\.S\.C\. § 347/ }).first().click();
-  await expect(page).toHaveURL(/\/r\/title-21-FOOD-AND-DRUGS\/347/);
+  await expect(page).toHaveURL(/\/r\/title-21\/347/);
 });

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { VoteArrows } from "@/components/r/vote-arrows";
-import { CitationText } from "@/components/r/citation-text";
+import { VoteArrows } from "@/components/reader/vote-arrows";
+import { CitationText } from "@/components/reader/citation-text";
 import { agePhrase } from "@/lib/reddit-format";
 import { subredditSlug } from "@/lib/title-names";
-import styles from "@/app/r/reddit.module.css";
+import styles from "@/app/(reader)/reader.module.css";
 
 type RandomLaw = {
   id: number; citation: string; heading: string; title: number; url: string;
@@ -18,13 +18,14 @@ type RandomLaw = {
 function QuickTake({ nodeId }: { nodeId: number }) {
   const [body, setBody] = useState("");
   const [message, setMessage] = useState("");
+  const [success, setSuccess] = useState(false);
   const [open, setOpen] = useState(false);
 
   async function submit(event: React.FormEvent) {
-    event.preventDefault(); setMessage("");
+    event.preventDefault(); setMessage(""); setSuccess(false);
     const response = await fetch("/api/takes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, body, website: "" }) });
     const result = await response.json();
-    if (response.ok) { setBody(""); setMessage("your argument is live on the section's page"); }
+    if (response.ok) { setBody(""); setSuccess(true); setMessage("your argument is live on the section's page"); }
     else setMessage(result.error || "could not post");
   }
 
@@ -32,7 +33,7 @@ function QuickTake({ nodeId }: { nodeId: number }) {
   return <form className={styles.commentForm} onSubmit={submit} style={{ marginBottom: 0 }}>
     <textarea data-testid={`quicktake-body-${nodeId}`} required minLength={3} maxLength={280} value={body} onChange={(event) => setBody(event.target.value)} placeholder="one claim, 280 characters (carries your vote)" />
     <div className={styles.formRow}><span>{body.length}/280</span><button data-testid={`quicktake-save-${nodeId}`} className={styles.saveButton}>save</button></div>
-    {message && <p role="status" className={styles.formError} style={{ color: "var(--keep-ink)" }}>{message}</p>}
+    {message && <p role={success ? "status" : "alert"} className={styles.formError} style={{ color: success ? "var(--keep-ink)" : undefined }}>{message}</p>}
   </form>;
 }
 

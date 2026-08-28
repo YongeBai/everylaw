@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { readLocalVotes, recordLocalVote } from "@/lib/local-history";
+import { readLocalVotes, recordLocalVote, removeLocalVote } from "@/lib/local-history";
 import { emitPostVote } from "@/lib/vote-sync";
-import styles from "@/app/r/reddit.module.css";
+import styles from "@/app/(reader)/reader.module.css";
 
 type Props = {
   nodeId: number; citation: string; heading: string; url: string;
@@ -31,26 +31,29 @@ export function VoteArrows({ nodeId, citation, heading, url, keepCount, dissolve
       const result = await response.json();
       setCounts({ keep: result.keepCount, dissolve: result.dissolveCount });
       if (result.direction === "keep" || result.direction === "dissolve") setMine(result.direction);
+      else { setMine(null); removeLocalVote(nodeId); }
     }).catch(() => { /* seed stays local */ });
     return () => controller.abort();
   }, [nodeId, size]);
 
   async function vote(direction: "keep" | "dissolve") {
     setError("");
-    const response = await fetch("/api/vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, direction }) });
+    const nextDirection = mine === direction ? null : direction;
+    const response = await fetch("/api/vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, direction: nextDirection }) });
     const result = await response.json();
     if (!response.ok) { setError(result.error || "Vote failed"); return; }
     setCounts({ keep: result.keepCount, dissolve: result.dissolveCount });
-    setMine(direction);
-    emitPostVote(nodeId, direction === "keep" ? "up" : "down");
-    recordLocalVote({ id: nodeId, citation, heading, url, direction, keepCount: result.keepCount, dissolveCount: result.dissolveCount, ts: Date.now() });
+    setMine(nextDirection);
+    emitPostVote(nodeId, nextDirection === "keep" ? "up" : nextDirection === "dissolve" ? "down" : null);
+    if (nextDirection) recordLocalVote({ id: nodeId, citation, heading, url, direction: nextDirection, keepCount: result.keepCount, dissolveCount: result.dissolveCount, ts: Date.now() });
+    else removeLocalVote(nodeId);
   }
 
   const score = counts.keep - counts.dissolve;
   return <div className={`${styles.arrows} ${size === "post" ? styles.arrowsPost : ""}`} data-testid={`arrows-${nodeId}`}>
-    <button aria-label={`Keep ${citation}`} data-testid={`arrow-keep-${nodeId}`} aria-pressed={mine === "keep"} className={styles.arrowUp} onClick={() => vote("keep")}>▲</button>
+    <button aria-label={`${mine === "keep" ? "Remove Keep vote from" : "Keep"} ${citation}`} data-testid={`arrow-keep-${nodeId}`} aria-pressed={mine === "keep"} className={styles.arrowUp} onClick={() => vote("keep")}>▲</button>
     <b className={styles.score} data-vote={mine ?? undefined} title={`${counts.keep} keep · ${counts.dissolve} dissolve`}>{score.toLocaleString()}</b>
-    <button aria-label={`Dissolve ${citation}`} data-testid={`arrow-dissolve-${nodeId}`} aria-pressed={mine === "dissolve"} className={styles.arrowDown} onClick={() => vote("dissolve")}>▼</button>
+    <button aria-label={`${mine === "dissolve" ? "Remove Dissolve vote from" : "Dissolve"} ${citation}`} data-testid={`arrow-dissolve-${nodeId}`} aria-pressed={mine === "dissolve"} className={styles.arrowDown} onClick={() => vote("dissolve")}>▼</button>
     {error && <span role="alert" className={styles.arrowError}>{error}</span>}
   </div>;
 }

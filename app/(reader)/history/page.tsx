@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { dissentShare, readLocalVotes, type LocalVote } from "@/lib/local-history";
-import { RHeader } from "@/components/r/header";
-import styles from "../reddit.module.css";
+import { RHeader } from "@/components/reader/header";
+import styles from "../reader.module.css";
 
 export default function HistoryPage() {
   const [votes, setVotes] = useState<LocalVote[] | null>(null);
@@ -27,8 +27,7 @@ export default function HistoryPage() {
     <div className={styles.shell}>
       <main className={styles.main}>
         <h1 className={styles.pageTitle} style={{ marginBottom: 2 }}>your record</h1>
-        <p className={styles.tagline} style={{ margin: "0 4px 10px" }}>saved in this browser only.</p>
-        {votes === null ? <p style={{ padding: 12 }}>loading…</p> : votes.length === 0 ? <p style={{ padding: 12 }} data-testid="history-empty">You haven’t judged any sections in this browser yet. <Link href="/r">Start on the front page →</Link></p> : <>
+        {votes === null ? <p style={{ padding: 12 }}>loading…</p> : votes.length === 0 ? <p style={{ padding: 12 }} data-testid="history-empty">You haven’t judged any sections yet. <Link href="/">Start on the front page →</Link></p> : <>
           {hottest && hottestDissent > 0.5 && <div className={styles.hotTake} data-testid="hottest-take">
             <b>🔥 your hottest take:</b> you said <b>{hottest.direction}</b> on <Link href={hottest.url}>{hottest.citation}</Link> while {Math.round(hottestDissent * 100)}% of voters went the other way.
           </div>}

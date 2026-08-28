@@ -1,7 +1,6 @@
 /**
- * Canonical subreddit slugs carry the title's name so the URL says what the
- * title covers: r/title-18-CRIMES-AND-CRIMINAL-PROCEDURE. Names mirror the
- * ingested USC title headings (release 119-102); bare r/title-18 still resolves.
+ * Display subreddit slugs carry the title's name, matching old Reddit's visible
+ * community identity. Canonical paths use the stable title number alone.
  */
 /** Header topbar picks: title number + hand-shortened label (not derivable from the heading). */
 export const TOPBAR_TITLES: [number, string][] = [
@@ -71,7 +70,12 @@ export function subredditSlug(title: number): string {
   return name ? `title-${title}-${name}` : `title-${title}`;
 }
 
-/** Accepts both r/title-18 and r/title-18-CRIMES-AND-CRIMINAL-PROCEDURE. */
+/** Stable route slug; title names remain presentation rather than URL state. */
+export function subredditPathSlug(title: number): string {
+  return `title-${title}`;
+}
+
+/** Accepts canonical and legacy named title slugs. */
 export function titleNumberFromSlug(slug: string): number | null {
   const match = /^title-(\d+)(?:-|$)/.exec(slug);
   return match ? Number(match[1]) : null;

@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 /* Site-wide link preview, drawn as the interface itself: old-reddit chrome
    with the front page's promise. Per-law pages ship their own via /api/og. */
 
-export const alt = "everylaw — the front page of the U.S. Code";
+export const alt = "everylaw - the front page of the U.S. Code";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

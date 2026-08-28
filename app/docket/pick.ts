@@ -1,14 +1,12 @@
 import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { getAiContent, getLawById, getLawLiteById, getTakes, type LawSummary } from "@/lib/data";
+import { getAiContent, getLawById, getLawLiteById, getTakes, getTermsDefinedByLaw, type LawSummary } from "@/lib/data";
 import { viewerVoterHash } from "@/lib/viewer";
+import { docketDayKey } from "@/lib/docket-day";
 
 /** Trial days roll over at midnight Pacific time. */
-export function dayKey(offsetDays = 0): string {
-  const date = new Date(Date.now() + offsetDays * 86_400_000);
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
-}
+export const dayKey = (offsetDays = 0): string => docketDayKey(new Date(), offsetDays);
 
 /** Deterministic index for the day within a pool of the given size. */
 function pickIndexForDay(poolSize: number, key: string): number {
@@ -33,6 +31,7 @@ export type Docket = {
   explanation: string | null;
   origin: string | null;
   takes: Awaited<ReturnType<typeof getTakes>>;
+  locallyDefinedTerms: string[];
   yesterday: LawSummary | null;
   todayKey: string;
 };
@@ -41,12 +40,13 @@ export async function getDocket(): Promise<Docket | null> {
   const todayKey = dayKey();
   const [todayId, yesterdayId] = await Promise.all([trialIdForDay(todayKey), trialIdForDay(dayKey(-1))]);
   if (!todayId) return null;
-  const [law, aiContent, takes, yesterday] = await Promise.all([
+  const [law, aiContent, takes, yesterday, locallyDefinedTerms] = await Promise.all([
     getLawById(todayId),
     getAiContent(todayId),
     viewerVoterHash().then((hash) => getTakes(todayId, hash)),
     // Yesterday's law only feeds the verdict recap line — skip the statute bodies.
     yesterdayId === null || yesterdayId === todayId ? Promise.resolve(null) : getLawLiteById(yesterdayId),
+    getTermsDefinedByLaw(todayId),
   ]);
   if (!law) return null;
   return {
@@ -54,6 +54,6 @@ export async function getDocket(): Promise<Docket | null> {
     summary: aiContent.summary?.body ?? aiContent.explanation?.body ?? null,
     explanation: aiContent.explanation?.body ?? null,
     origin: aiContent.origin?.body ?? null,
-    takes, yesterday, todayKey,
+    takes, locallyDefinedTerms, yesterday, todayKey,
   };
 }
