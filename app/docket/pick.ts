@@ -14,7 +14,13 @@ function pickIndexForDay(poolSize: number, key: string): number {
   return digest.readUInt32BE(0) % poolSize;
 }
 
-const DOCKET_POOL = sql.raw(`FROM law_nodes WHERE node_type = 'section' AND status = 'active' AND EXISTS (SELECT 1 FROM ai_contents c WHERE c.node_id = law_nodes.id AND c.content_type = 'summary' AND c.status = 'published')`);
+// A trial needs stakes: only sections that impose a punishment (fine,
+// imprisonment, penalty, forfeiture) stand trial, and definition sections
+// never do. The pool is further capped by published AI summaries.
+const DOCKET_POOL = sql.raw(`FROM law_nodes WHERE node_type = 'section' AND status = 'active'
+  AND heading NOT ILIKE '%definition%'
+  AND body_text ~* 'shall be (fined|imprisoned|punished)|fined under this title|imprison|penalt|punish|forfeit'
+  AND EXISTS (SELECT 1 FROM ai_contents c WHERE c.node_id = law_nodes.id AND c.content_type = 'summary' AND c.status = 'published')`);
 
 async function trialIdForDay(key: string): Promise<number | null> {
   const countRows = await db.execute(sql`SELECT count(*)::int n ${DOCKET_POOL}`);
