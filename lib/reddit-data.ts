@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { VOTE_COLS, VOTE_JOIN } from "@/lib/data";
 import { titleFromIdentifier } from "@/lib/reddit-format";
+import { HOME_SEED_IDENTIFIERS } from "@/lib/home-seeds";
 
 export type RSort = "hot" | "top" | "controversial" | "dissolved" | "kept" | "order";
 export const R_SORTS: { key: RSort; label: string }[] = [
@@ -54,13 +55,28 @@ const POST_SELECT = sql.raw(`
   LEFT JOIN LATERAL (SELECT count(*)::int cnt FROM votes WHERE node_id = n.id AND updated_at > now() - interval '7 days') r ON true`);
 
 export async function getRPosts(sort: RSort, titleNum?: number, limit = 25, offset = 0): Promise<RPost[]> {
+  const seedList = sql.join(HOME_SEED_IDENTIFIERS.map((identifier) => sql`${identifier}`), sql`, `);
+  const isSeed = sql`n.identifier IN (${seedList})`;
   const scope = titleNum
     ? sql`n.identifier LIKE ${"/us/usc/t" + titleNum + "/%"}`
-    : sql`(COALESCE(v.total_count,0) > 0 OR n.featured_tier >= 1)`;
+    : sql`(COALESCE(v.total_count,0) > 0 OR ${isSeed})`;
+  const order = sort === "hot" && !titleNum
+    ? sql`
+      CASE
+        WHEN COALESCE(r.cnt,0) >= 3 THEN 0
+        WHEN ${isSeed} THEN 1
+        WHEN COALESCE(r.cnt,0) > 0 THEN 2
+        ELSE 3
+      END,
+      CASE WHEN COALESCE(r.cnt,0) >= 3 THEN r.cnt ELSE 0 END DESC,
+      array_position(ARRAY[${seedList}]::text[], n.identifier) ASC NULLS LAST,
+      COALESCE(v.total_count,0) DESC,
+      n.sort_key`
+    : ORDERS[sort];
   const rows = await db.execute(sql`
     ${POST_SELECT}
     WHERE n.node_type = 'section' AND ${scope}
-    ORDER BY ${ORDERS[sort]}
+    ORDER BY ${order}
     LIMIT ${limit} OFFSET ${offset}
   `);
   return rows.map(mapPost);

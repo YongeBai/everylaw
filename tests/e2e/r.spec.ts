@@ -3,6 +3,11 @@ import { expect, test } from "@playwright/test";
 test("the front page of the U.S. Code lives at root with sort tabs", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("post-list")).toBeVisible();
+  // The cold-start feed deliberately mixes pocketbook, provocative, rights,
+  // and odd laws instead of falling back to arbitrary U.S. Code order.
+  for (const citation of ["26 U.S.C. § 1", "18 U.S.C. § 1111", "29 U.S.C. § 206", "17 U.S.C. § 107", "21 U.S.C. § 347"]) {
+    await expect(page.getByTestId("post-list").getByRole("link", { name: new RegExp(`^${citation.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} —`) })).toBeVisible();
+  }
   for (const sort of ["hot", "top", "controversial", "dissolved", "kept", "order"]) {
     await expect(page.getByTestId(`sort-${sort}`)).toBeVisible();
   }
