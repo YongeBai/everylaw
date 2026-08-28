@@ -9,6 +9,7 @@ import { agePhrase, lawUrl, officialSourceUrl, subredditUrl, wikiUrl } from "@/l
 import { subredditSlug } from "@/lib/title-names";
 import { RHeader } from "@/components/reader/header";
 import { VoteArrows } from "@/components/reader/vote-arrows";
+import { VoteTotals } from "@/components/reader/vote-totals";
 import { OfficialText } from "@/components/reader/official-text";
 import { Comments } from "@/components/reader/comments";
 import { CitationText } from "@/components/reader/citation-text";
@@ -53,7 +54,7 @@ export default async function RPostPage({ params }: Props) {
           <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} size="post" />
           <div className={styles.postHead}>
             <h1><Link href={sourceUrl} target="_blank" rel="noopener">{law.citation} — {law.heading}</Link>{law.status !== "active" && <span className={styles.postFlair}>{law.status}</span>}</h1>
-            <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={subredditUrl(law.title)}>r/{subredditSlug(law.title)}</Link> · {law.wordCount.toLocaleString()} words · {law.keepCount} keep · {law.dissolveCount} dissolve</p>
+            <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={subredditUrl(law.title)}>r/{subredditSlug(law.title)}</Link> · {law.wordCount.toLocaleString()} words<VoteTotals nodeId={law.id} keepCount={law.keepCount} dissolveCount={law.dissolveCount} always /></p>
 
             <section className={styles.section} data-testid="post-translation">
               <div className={styles.sectionHead}>in plain english<span className={styles.aiBadge}>AI-generated · not legal advice</span></div>

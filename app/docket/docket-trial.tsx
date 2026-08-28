@@ -5,6 +5,7 @@ import { parseHistory } from "@/lib/history";
 import { highlightTerms } from "@/lib/terms";
 import { RHeader } from "@/components/reader/header";
 import { VoteArrows } from "@/components/reader/vote-arrows";
+import { DocketVoteTally } from "@/components/reader/vote-totals";
 import { OfficialText } from "@/components/reader/official-text";
 import { Comments } from "@/components/reader/comments";
 import { CitationText } from "@/components/reader/citation-text";
@@ -17,8 +18,6 @@ export function DocketTrial({ docket }: { docket: Docket }) {
   const { law, summary, explanation, origin, takes, locallyDefinedTerms, yesterday, todayKey } = docket;
   const url = lawUrl(law);
   const trialDate = new Date(`${todayKey}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-  const total = law.keepCount + law.dissolveCount;
-  const keepPct = total > 0 ? Math.round((law.keepCount / total) * 100) : 50;
   const history = parseHistory(law.sourceCredit);
 
   return <div className={styles.page}>
@@ -55,10 +54,7 @@ export function DocketTrial({ docket }: { docket: Docket }) {
           </p>
           <div className={styles.trialVerdict}>
             <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} size="post" />
-            <div className={styles.trialTallyWrap}>
-              <div className={styles.trialTally} aria-label={`${keepPct}% keep`}><i style={{ width: `${keepPct}%` }} /></div>
-              <p className={styles.trialTallyLabel}><span>▲ {law.keepCount.toLocaleString()} keep</span><b>{total.toLocaleString()} jurors so far</b><span>▼ {law.dissolveCount.toLocaleString()} dissolve</span></p>
-            </div>
+            <DocketVoteTally nodeId={law.id} keepCount={law.keepCount} dissolveCount={law.dissolveCount} />
           </div>
         </div>
       </section>

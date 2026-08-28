@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { onPostVote, type PostVote } from "@/lib/vote-sync";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { onPostVote, optimisticTakeVoteCounts, type PostVote, type TakeVoteCounts, type TakeVoteDirection } from "@/lib/vote-sync";
 import { CitationText } from "@/components/reader/citation-text";
 import styles from "@/app/(reader)/reader.module.css";
 
@@ -52,14 +52,49 @@ function CommentNode({ comment, childrenOf, nodeId, title, onPosted, onVoted }: 
 }) {
   const [replying, setReplying] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [voteError, setVoteError] = useState("");
+  const voteRef = useRef<TakeVoteDirection>(comment.myVote);
+  const countsRef = useRef<TakeVoteCounts>({ upvoteCount: comment.upvoteCount, downvoteCount: comment.downvoteCount });
+  const sequenceRef = useRef(0);
+  const requestQueueRef = useRef<Promise<void>>(Promise.resolve());
   const kids = childrenOf.get(comment.id) ?? [];
   const score = comment.upvoteCount - comment.downvoteCount;
 
-  async function voteComment(direction: 1 | -1) {
-    const nextDirection = comment.myVote === direction ? null : direction;
-    const response = await fetch("/api/take-vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ takeId: comment.id, direction: nextDirection }) });
-    const result = await response.json();
-    if (response.ok) onVoted(comment.id, result.upvoteCount, result.downvoteCount, result.direction);
+  useEffect(() => {
+    voteRef.current = comment.myVote;
+    countsRef.current = { upvoteCount: comment.upvoteCount, downvoteCount: comment.downvoteCount };
+  }, [comment.myVote, comment.upvoteCount, comment.downvoteCount]);
+
+  function showVote(direction: TakeVoteDirection, counts: TakeVoteCounts) {
+    voteRef.current = direction;
+    countsRef.current = counts;
+    onVoted(comment.id, counts.upvoteCount, counts.downvoteCount, direction);
+  }
+
+  function voteComment(direction: Exclude<TakeVoteDirection, null>) {
+    setVoteError("");
+    const previousDirection = voteRef.current;
+    const nextDirection = previousDirection === direction ? null : direction;
+    const optimisticCounts = optimisticTakeVoteCounts(countsRef.current, previousDirection, nextDirection);
+    const sequence = ++sequenceRef.current;
+    showVote(nextDirection, optimisticCounts);
+
+    const request = requestQueueRef.current.then(async () => {
+      const response = await fetch("/api/take-vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ takeId: comment.id, direction: nextDirection }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not vote");
+      if (sequence === sequenceRef.current) showVote(result.direction, result);
+    });
+    requestQueueRef.current = request.catch(() => undefined);
+    void request.catch(async (cause) => {
+      if (sequence !== sequenceRef.current) return;
+      setVoteError(cause instanceof Error ? cause.message : "Could not vote");
+      try {
+        const response = await fetch(`/api/take-vote?takeId=${comment.id}`);
+        const result = await response.json();
+        if (response.ok && sequence === sequenceRef.current) showVote(result.direction, result);
+      } catch { /* retain the optimistic view until the next server sync */ }
+    });
   }
 
   return <div className={styles.comment} data-testid={`comment-${comment.id}`}>
@@ -74,6 +109,7 @@ function CommentNode({ comment, childrenOf, nodeId, title, onPosted, onVoted }: 
         <b data-testid={`cscore-${comment.id}`}>{score} point{Math.abs(score) === 1 ? "" : "s"}</b>
         <span>({comment.upvoteCount}|{comment.downvoteCount})</span>
         <time dateTime={comment.createdAt} suppressHydrationWarning>{ago(comment.createdAt)}</time>
+        {voteError && <span role="alert" className={styles.formError}>{voteError}</span>}
       </p>
       {!collapsed && <>
         <p className={styles.commentBody}><CitationText title={title}>{comment.body}</CitationText></p>

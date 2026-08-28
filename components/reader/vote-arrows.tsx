@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { readLocalVotes, recordLocalVote, removeLocalVote } from "@/lib/local-history";
-import { emitPostVote } from "@/lib/vote-sync";
+import { directionToVote, emitPostVote, optimisticVoteCounts, type PostVoteCounts, type VoteDirection } from "@/lib/vote-sync";
 import styles from "@/app/(reader)/reader.module.css";
 
 type Props = {
@@ -13,8 +13,23 @@ type Props = {
 
 export function VoteArrows({ nodeId, citation, heading, url, keepCount, dissolveCount, size = "row" }: Props) {
   const [counts, setCounts] = useState({ keep: keepCount, dissolve: dissolveCount });
-  const [mine, setMine] = useState<"keep" | "dissolve" | null>(null);
+  const [mine, setMine] = useState<VoteDirection>(null);
   const [error, setError] = useState("");
+  const countsRef = useRef<PostVoteCounts>({ keepCount, dissolveCount });
+  const mineRef = useRef<VoteDirection>(null);
+  const sequenceRef = useRef(0);
+  const requestQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  function showVote(direction: VoteDirection, nextCounts: PostVoteCounts, remember = true) {
+    mineRef.current = direction;
+    countsRef.current = nextCounts;
+    setMine(direction);
+    setCounts({ keep: nextCounts.keepCount, dissolve: nextCounts.dissolveCount });
+    emitPostVote(nodeId, directionToVote(direction), nextCounts);
+    if (!remember) return;
+    if (direction) recordLocalVote({ id: nodeId, citation, heading, url, direction, ...nextCounts, ts: Date.now() });
+    else removeLocalVote(nodeId);
+  }
 
   useEffect(() => {
     // Fast local seed for every row; on post pages also ask the server, whose
@@ -23,30 +38,52 @@ export function VoteArrows({ nodeId, citation, heading, url, keepCount, dissolve
     // localStorage is only readable after hydration; this one-time sync seed
     // cannot move into initial state without a server/client hydration mismatch.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (stored) setMine(stored.direction);
+    if (stored) { mineRef.current = stored.direction; setMine(stored.direction); }
     if (size !== "post") return;
+    const startingSequence = sequenceRef.current;
     const controller = new AbortController();
     fetch(`/api/vote?nodeId=${nodeId}`, { signal: controller.signal }).then(async (response) => {
       if (!response.ok) return;
       const result = await response.json();
-      setCounts({ keep: result.keepCount, dissolve: result.dissolveCount });
-      if (result.direction === "keep" || result.direction === "dissolve") setMine(result.direction);
-      else { setMine(null); removeLocalVote(nodeId); }
+      if (sequenceRef.current !== startingSequence) return;
+      const direction = result.direction === "keep" || result.direction === "dissolve" ? result.direction : null;
+      showVote(direction, result, false);
+      if (!direction) removeLocalVote(nodeId);
     }).catch(() => { /* seed stays local */ });
     return () => controller.abort();
+    // showVote deliberately stays local to this component instance; changing
+    // nodeId or size remounts/reseeds the control.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodeId, size]);
 
-  async function vote(direction: "keep" | "dissolve") {
+  function vote(direction: Exclude<VoteDirection, null>) {
     setError("");
-    const nextDirection = mine === direction ? null : direction;
-    const response = await fetch("/api/vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, direction: nextDirection }) });
-    const result = await response.json();
-    if (!response.ok) { setError(result.error || "Vote failed"); return; }
-    setCounts({ keep: result.keepCount, dissolve: result.dissolveCount });
-    setMine(nextDirection);
-    emitPostVote(nodeId, nextDirection === "keep" ? "up" : nextDirection === "dissolve" ? "down" : null);
-    if (nextDirection) recordLocalVote({ id: nodeId, citation, heading, url, direction: nextDirection, keepCount: result.keepCount, dissolveCount: result.dissolveCount, ts: Date.now() });
-    else removeLocalVote(nodeId);
+    const previousDirection = mineRef.current;
+    const nextDirection = previousDirection === direction ? null : direction;
+    const optimisticCounts = optimisticVoteCounts(countsRef.current, previousDirection, nextDirection);
+    const sequence = ++sequenceRef.current;
+    showVote(nextDirection, optimisticCounts);
+
+    const request = requestQueueRef.current.then(async () => {
+      const response = await fetch("/api/vote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nodeId, direction: nextDirection }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Vote failed");
+      if (sequence !== sequenceRef.current) return;
+      const confirmedDirection = result.direction === "keep" || result.direction === "dissolve" ? result.direction : null;
+      showVote(confirmedDirection, result);
+    });
+    requestQueueRef.current = request.catch(() => undefined);
+    void request.catch(async (cause) => {
+      if (sequence !== sequenceRef.current) return;
+      setError(cause instanceof Error ? cause.message : "Vote failed");
+      try {
+        const response = await fetch(`/api/vote?nodeId=${nodeId}`);
+        const result = await response.json();
+        if (!response.ok || sequence !== sequenceRef.current) return;
+        const confirmedDirection = result.direction === "keep" || result.direction === "dissolve" ? result.direction : null;
+        showVote(confirmedDirection, result);
+      } catch { /* retain the optimistic view until the next server sync */ }
+    });
   }
 
   const score = counts.keep - counts.dissolve;

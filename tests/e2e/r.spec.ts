@@ -31,6 +31,43 @@ test("subreddits scope a title with sidebar info and related laws on posts", asy
   await expect(page.getByTestId("related-laws").getByRole("link").first()).toBeVisible();
 });
 
+test("post-list keep and dissolve totals follow the vote arrows", async ({ page }) => {
+  await page.goto("/r/title-21?sort=order");
+  const post = page.getByTestId("post-list").locator("article").first();
+  const arrows = post.getByTestId(/^arrows-\d+$/);
+  const nodeId = Number((await arrows.getAttribute("data-testid"))!.replace("arrows-", ""));
+  const initial = await page.evaluate(async (id) => (await fetch(`/api/vote?nodeId=${id}`)).json(), nodeId);
+  let releaseVote!: () => void;
+  const voteGate = new Promise<void>((resolve) => { releaseVote = resolve; });
+  await page.route("**/api/vote", async (route) => {
+    if (route.request().method() === "POST") await voteGate;
+    await route.continue();
+  });
+
+  await arrows.getByTestId(/^arrow-keep-/).click();
+  const totals = post.getByTestId(`vote-totals-${nodeId}`);
+  // These change while the network request is deliberately still blocked.
+  await expect(arrows.getByTestId(/^arrow-keep-/)).toHaveAttribute("aria-pressed", "true");
+  await expect(totals).toContainText(`${initial.keepCount + 1} keep`);
+  await expect(totals).toContainText(`${initial.dissolveCount} dissolve`);
+  releaseVote();
+  await page.unrouteAll({ behavior: "wait" });
+
+  await arrows.getByTestId(/^arrow-dissolve-/).click();
+  await expect(arrows.getByTestId(/^arrow-dissolve-/)).toHaveAttribute("aria-pressed", "true");
+  await expect(totals).toContainText(`${initial.keepCount} keep`);
+  await expect(totals).toContainText(`${initial.dissolveCount + 1} dissolve`);
+
+  await arrows.getByTestId(/^arrow-dissolve-/).click();
+  await expect(arrows.getByTestId(/^arrow-dissolve-/)).toHaveAttribute("aria-pressed", "false");
+  if (initial.keepCount + initial.dissolveCount === 0) {
+    await expect(totals).toHaveCount(0);
+  } else {
+    await expect(totals).toContainText(`${initial.keepCount} keep`);
+    await expect(totals).toContainText(`${initial.dissolveCount} dissolve`);
+  }
+});
+
 test("title names are displayed but stay out of canonical URLs", async ({ page, request }) => {
   const legacy = await request.get("/r/title-29-LABOR/1002", { maxRedirects: 0 });
   expect(legacy.status()).toBe(308);
@@ -122,9 +159,18 @@ test("comments carry the commenter's post vote and follow vote changes", async (
   await arrows.getByRole("button", { name: /Dissolve/ }).click();
   await expect(page.getByTestId(`cvote-${id}`)).toContainText("downvoted");
 
+  let releaseTakeVote!: () => void;
+  const takeVoteGate = new Promise<void>((resolve) => { releaseTakeVote = resolve; });
+  await page.route("**/api/take-vote", async (route) => {
+    if (route.request().method() === "POST") await takeVoteGate;
+    await route.continue();
+  });
   await page.getByTestId(`cup-${id}`).click();
+  // Comment score and selection also update before the API responds.
   await expect(page.getByTestId(`cscore-${id}`)).toContainText("1 point");
   await expect(page.getByTestId(`cup-${id}`)).toHaveAttribute("aria-pressed", "true");
+  releaseTakeVote();
+  await page.unrouteAll({ behavior: "wait" });
   await page.getByTestId(`cup-${id}`).click();
   await expect(page.getByTestId(`cscore-${id}`)).toContainText("0 points");
   await expect(page.getByTestId(`cup-${id}`)).toHaveAttribute("aria-pressed", "false");
