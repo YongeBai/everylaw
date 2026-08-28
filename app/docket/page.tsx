@@ -3,8 +3,8 @@ import { DocketTrial } from "./docket-trial";
 import { getDocket } from "./pick";
 
 export const metadata: Metadata = {
-  title: "Today’s trial — one law, everyone, same day",
-  description: "Every day one law stands trial: read it, enter your verdict, make your case. A new trial opens at midnight UTC.",
+  title: "Today’s trial — one section, everyone, same day",
+  description: "Every day one section stands trial: read it, enter your verdict, make your case. A new trial opens at midnight UTC.",
 };
 export const dynamic = "force-dynamic";
 

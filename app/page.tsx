@@ -29,12 +29,12 @@ export default async function FrontPage({ searchParams }: { searchParams: Promis
           <div className={styles.sideStat}><span>accounts required</span><b>none</b></div>
         </div></div>
         <div className={styles.sideBox}><h2>today’s trial</h2><div className={styles.sideBoxBody}>
-          <p>One law stands trial every day. New trial at midnight PST.</p>
+          <p>One section stands trial every day. New trial at midnight PST.</p>
           <p><Link href="/docket">Take the stand →</Link></p>
         </div></div>
-        <div className={styles.sideBox}><h2>random law</h2><div className={styles.sideBoxBody}>
+        <div className={styles.sideBox}><h2>random section</h2><div className={styles.sideBoxBody}>
           <p>An endless stack from all {stats.sectionsInForce.toLocaleString()} sections in force.</p>
-          <p><Link href="/r/random">Deal me a law →</Link></p>
+          <p><Link href="/r/random">Deal me a section →</Link></p>
         </div></div>
       </aside>
     </div>

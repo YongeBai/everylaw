@@ -19,7 +19,7 @@ function ago(iso: string): string {
 
 function VoteBadge({ id, vote }: { id: number; vote: PostVote | null }) {
   if (!vote) return null;
-  return <span data-vote={vote} data-testid={`cvote-${id}`} className={styles.voteTag} title={`this commenter ${vote === "up" ? "upvoted" : "downvoted"} this law`}>{vote === "up" ? "▲ upvoted" : "▼ downvoted"}</span>;
+  return <span data-vote={vote} data-testid={`cvote-${id}`} className={styles.voteTag} title={`this commenter ${vote === "up" ? "upvoted" : "downvoted"} this section`}>{vote === "up" ? "▲ upvoted" : "▼ downvoted"}</span>;
 }
 
 function CommentForm({ nodeId, parentId, onPosted, onCancel }: { nodeId: number; parentId: number | null; onPosted: (comment: RComment) => void; onCancel?: () => void }) {

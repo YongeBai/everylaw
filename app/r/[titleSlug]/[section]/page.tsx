@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { titleSlug, section } = await params;
   const law = await getLaw(titleSlug, decodeURIComponent(section));
-  if (!law) return { title: "Law not found" };
+  if (!law) return { title: "Section not found" };
   return { title: `${law.citation} — ${law.heading}`, description: `Read ${law.citation} in plain English, see its history, and make the case to keep or dissolve it.`, alternates: { canonical: lawUrl(law) } };
 }
 
@@ -90,7 +90,7 @@ export default async function RPostPage({ params }: Props) {
           <div className={styles.sideStat}><span>words</span><b>{law.wordCount.toLocaleString()}</b></div>
           <div className={styles.sideStat}><span>status</span><b>{law.status}</b></div>
         </div></div>
-        <div className={styles.sideBox}><h2>related laws</h2><div className={styles.sideBoxBody}>
+        <div className={styles.sideBox}><h2>related sections</h2><div className={styles.sideBoxBody}>
           <ul className={styles.related}>
             {navigation.previous && <li><Link href={lawUrl(navigation.previous)}>{navigation.previous.citation} — {navigation.previous.heading}</Link></li>}
             {navigation.next && <li><Link href={lawUrl(navigation.next)}>{navigation.next.citation} — {navigation.next.heading}</Link></li>}

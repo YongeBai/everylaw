@@ -36,7 +36,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                   {law.status !== "active" && <span className={styles.postFlair}>{law.status}</span>}
                 </p>
                 <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={subredditUrl(law.title)}>r/{subredditSlug(law.title)}</Link> · {law.keepCount} keep · {law.dissolveCount} dissolve</p>
-                <p className={styles.buttons}><Link href={url}>read the law</Link></p>
+                <p className={styles.buttons}><Link href={url}>read the section</Link></p>
               </div>
             </article>;
           })}

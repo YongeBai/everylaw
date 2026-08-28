@@ -23,7 +23,7 @@ export function DocketTrial({ docket }: { docket: Docket }) {
     <RHeader />
     <div className={styles.trialStage}>
       <section className={styles.trialBox} data-testid="docket-trial">
-        <div className={styles.trialSticky}>⚖ {trialDate} trial<span className={styles.trialStickyRight}>new law is up for trial at midnight PST</span></div>
+        <div className={styles.trialSticky}>⚖ {trialDate} trial<span className={styles.trialStickyRight}>new section is up for trial at midnight PST</span></div>
         <div className={styles.trialInner}>
           <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={subredditUrl(law.title)}>r/{subredditSlug(law.title)}</Link></p>
           <h1 className={styles.trialTitle}><Link href={url}>{law.citation} — {law.heading}</Link></h1>
@@ -49,7 +49,7 @@ export function DocketTrial({ docket }: { docket: Docket }) {
             </div>}
           </details>
           <p className={styles.buttons} style={{ marginTop: 8 }}>
-            <Link href={url}>view law</Link>
+            <Link href={url}>view section</Link>
           </p>
           <div className={styles.trialVerdict}>
             <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} size="post" />

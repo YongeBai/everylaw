@@ -10,7 +10,7 @@ export const contentType = "image/png";
 const ROWS = [
   { rank: "1", score: "keep", title: "18 U.S.C. § 700 — Desecration of the flag of the United States", tagline: "submitted 58 years ago by Congress · 212 words" },
   { rank: "2", score: "477", title: "26 U.S.C. § 5001 — Imposition, rate, and attachment of tax", tagline: "submitted 86 years ago by Congress · 1,844 words" },
-  { rank: "3", score: "?", title: "Every federal law is a post. Read it in plain English, then vote.", tagline: "keep or dissolve — make the strongest case either way" },
+  { rank: "3", score: "?", title: "Every section of the U.S. Code is a post. Read it in plain English, then vote.", tagline: "keep or dissolve — make the strongest case either way" },
 ];
 
 export default function OpenGraphImage() {

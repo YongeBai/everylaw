@@ -42,7 +42,7 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
       </form>
       <nav className={styles.headerLinks}>
         <Link href="/docket">today’s trial</Link>
-        <Link href="/r/random" data-testid="r-random-link">random law</Link>
+        <Link href="/r/random" data-testid="r-random-link">random section</Link>
         <Link href="/r/history" data-testid="r-history-link">my votes</Link>
         <ThemeToggle />
       </nav>

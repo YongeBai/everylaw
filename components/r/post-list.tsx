@@ -16,7 +16,7 @@ function verdictLean(keep: number, dissolve: number): "keep" | "dissolve" | unde
 }
 
 export function PostList({ posts, startRank = 1 }: { posts: RPost[]; startRank?: number }) {
-  if (posts.length === 0) return <p style={{ padding: 12, color: "var(--muted)" }}>Nothing here yet — be the first to judge a law in this title.</p>;
+  if (posts.length === 0) return <p style={{ padding: 12, color: "var(--muted)" }}>Nothing here yet — be the first to judge a section in this title.</p>;
   return <div data-testid="post-list">
     {posts.map((post, index) => {
       const url = lawUrl(post);

@@ -99,7 +99,7 @@ export function RandomFeed() {
     </article>)}
     {error && <p role="alert" style={{ color: "var(--error)", padding: 8 }}>{error}</p>}
     <button ref={sentinelRef} data-testid="random-more" className={styles.saveButton} style={{ display: "block", margin: "10px auto 30px" }} onClick={() => void loadMore()} disabled={loading}>
-      {loading ? "dealing…" : "more random laws"}
+      {loading ? "dealing…" : "more random sections"}
     </button>
   </div>;
 }
