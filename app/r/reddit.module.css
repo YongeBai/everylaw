@@ -33,20 +33,27 @@
 .main { min-width: 0; }
 .side { font-size: 11px; }
 
-/* Post rows */
-.thing { display: grid; grid-template-columns: 64px 40px minmax(0, 1fr); gap: 8px; padding: 6px 4px; align-items: start; }
+/* Post rows — old-reddit density: three tight lines, no paragraph air */
+.thing { display: grid; grid-template-columns: 64px 44px minmax(0, 1fr); gap: 8px; padding: 5px 4px 6px; align-items: center; }
 .thing:nth-child(even) { background: var(--bg-alt); }
-.rank { color: var(--faint); font-size: 15px; text-align: right; padding-top: 4px; }
-.thumb { width: 40px; height: 30px; display: grid; place-items: center; background: var(--thumb-bg); color: var(--thumb-fg); font: 700 16px Georgia, serif; border-radius: 3px; }
+.rank { color: var(--faint); font-size: 15px; text-align: right; }
+/* Each title gets its own book-spine tint via --thumb-hue set on the element */
+.thumb { width: 44px; height: 32px; display: grid; place-items: center; background: hsl(var(--thumb-hue, 42) 24% 88%); color: hsl(var(--thumb-hue, 42) 30% 34%); border: 1px solid hsl(var(--thumb-hue, 42) 20% 77%); font: 700 14px Georgia, serif; border-radius: 3px; letter-spacing: -.5px; }
+:global([data-theme="dark"]) .thumb { background: hsl(var(--thumb-hue, 42) 14% 22%); color: hsl(var(--thumb-hue, 42) 26% 70%); border-color: hsl(var(--thumb-hue, 42) 14% 33%); }
 .entry { min-width: 0; }
-.postTitle { font-size: 14px; }
+.postTitle { margin: 0; font-size: 14px; line-height: 1.3; }
 .postTitle a { color: var(--link); }
 .postTitle a:visited { color: var(--link-visited); }
+.domain { margin-left: 5px; font-size: 10px; font-weight: 400; color: var(--muted); white-space: nowrap; }
+.domain a { color: var(--muted) !important; }
 .postFlair { display: inline-block; margin-left: 6px; padding: 0 5px; border: 1px solid var(--note-border); border-radius: 2px; background: var(--note-bg); color: var(--note-ink); font-size: 9px; font-weight: 700; vertical-align: 2px; }
-.tagline { margin: 2px 0; color: var(--muted); font-size: 10px; }
+.tagline { margin: 1px 0; color: var(--muted); font-size: 10px; }
 .tagline a { color: var(--link-soft) !important; }
-.buttons { display: flex; gap: 10px; font-size: 10px; font-weight: 700; }
+.keepInk { color: var(--keep-ink); font-weight: 700; }
+.dissolveInk { color: var(--dissolve-ink); font-weight: 700; }
+.buttons { display: flex; gap: 10px; margin: 1px 0 0; font-size: 10px; font-weight: 700; }
 .buttons a, .buttons span { color: var(--muted) !important; }
+.buttons a:first-child { color: var(--text-soft) !important; }
 
 /* Vote arrows */
 .arrows { display: flex; flex-direction: column; align-items: center; gap: 1px; width: 34px; margin-left: auto; }
