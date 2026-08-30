@@ -15,6 +15,7 @@ import { VoteTotals } from "@/components/reader/vote-totals";
 import { OfficialText } from "@/components/reader/official-text";
 import { Comments } from "@/components/reader/comments";
 import { CitationText } from "@/components/reader/citation-text";
+import { MarkdownBody } from "@/components/reader/markdown-body";
 import { linkSectionReferencesInHtml } from "@/lib/citations";
 import styles from "../../../reader.module.css";
 
@@ -63,7 +64,7 @@ export default async function RPostPage({ params }: Props) {
               <div className={styles.sectionBody}>
                 {content.summary && <p className={styles.translationBody} style={{ fontWeight: 700, marginTop: 0 }}><CitationText title={law.title}>{content.summary.body}</CitationText></p>}
                 {content.explanation
-                  ? <div className={styles.translationBody} style={{ marginTop: content.summary ? 10 : 0 }}><CitationText title={law.title}>{content.explanation.body}</CitationText></div>
+                  ? <div className={styles.translationBody} style={{ marginTop: content.summary ? 10 : 0 }}><MarkdownBody source={content.explanation.body} title={law.title} /></div>
                   : <p className={styles.pendingNote}>A translation hasn’t been published for this section yet. The official text below is complete and authoritative.</p>}
                 {content.facts && <div style={{ marginTop: 12, borderTop: "1px dotted var(--border-mid)", paddingTop: 10 }}>
                   <p style={{ margin: "0 0 4px", font: "700 10px Verdana, sans-serif", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>facts</p>

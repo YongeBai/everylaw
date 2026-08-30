@@ -10,22 +10,36 @@ const options = new Command()
   .option("--provider <provider>", "local or anthropic", "local")
   .option("--type <type>", "generate only summary, explanation, origin, or facts")
   .option("--publish", "publish instead of creating drafts")
-  .parse().opts<{ limit: string; provider: "local"|"anthropic"; type?: string; publish?: boolean }>();
+  .option("--citations <citations>", "comma-separated citations to (re)generate, replacing published content")
+  .parse().opts<{ limit: string; provider: "local"|"anthropic"; type?: string; publish?: boolean; citations?: string }>();
 const validTypes: ContentType[] = ["summary", "explanation", "origin", "facts"];
 if (!(["local", "anthropic"] as const).includes(options.provider)) throw new Error(`Invalid provider: ${options.provider}`);
 const limit = Number(options.limit);
 if (!Number.isInteger(limit) || limit < 1) throw new Error(`Invalid limit: ${options.limit}`);
 // Keep these explicit so every generated row records the prompt file used.
-const promptVersions: Record<ContentType, string> = { summary: "v2", explanation: "v3", origin: "v2", facts: "v1" };
+const promptVersions: Record<ContentType, string> = { summary: "v2", explanation: "v4", origin: "v2", facts: "v1" };
 if (options.type && !validTypes.includes(options.type as ContentType)) throw new Error(`Invalid content type: ${options.type}`);
 const types: ContentType[] = options.type ? [options.type as ContentType] : validTypes;
-// Any translatable section not yet covered — no featured-tier gating.
-const rows = await db.execute(sql`
-  SELECT id, citation, heading, body_text, source_credit, enacting_pl, enacted_date, word_count, amendment_count
-  FROM law_nodes n
-  WHERE node_type='section' AND length(trim(body_text)) >= 10
-    AND NOT EXISTS (SELECT 1 FROM ai_contents c WHERE c.node_id = n.id AND c.content_type = 'explanation' AND c.status = 'published')
-  ORDER BY sort_key LIMIT ${limit}`);
+const citations = options.citations?.split(",").map((citation) => citation.trim()).filter(Boolean);
+// Any translatable section not yet covered — no featured-tier gating. An
+// explicit citation list overrides the not-yet-covered filter so existing
+// published content can be regenerated (replaced atomically under --publish).
+const rows = citations?.length
+  ? await db.execute(sql`
+      SELECT id, citation, heading, body_text, source_credit, enacting_pl, enacted_date, word_count, amendment_count
+      FROM law_nodes n
+      WHERE node_type='section' AND citation = ANY(${sql.param(citations)}::text[])
+      ORDER BY sort_key`)
+  : await db.execute(sql`
+      SELECT id, citation, heading, body_text, source_credit, enacting_pl, enacted_date, word_count, amendment_count
+      FROM law_nodes n
+      WHERE node_type='section' AND length(trim(body_text)) >= 10
+        AND NOT EXISTS (SELECT 1 FROM ai_contents c WHERE c.node_id = n.id AND c.content_type = 'explanation' AND c.status = 'published')
+      ORDER BY sort_key LIMIT ${limit}`);
+if (citations?.length && rows.length !== citations.length) {
+  const found = new Set(rows.map((row) => String(row.citation)));
+  throw new Error(`Citations not found: ${citations.filter((citation) => !found.has(citation)).join(", ")}`);
+}
 
 type Generated = { body: string; model: string; input: number; output: number; truncated?: boolean };
 
@@ -46,7 +60,9 @@ async function anthropicGenerate(type: ContentType, law: LawInput): Promise<Gene
   const instruction = await instructionPromise;
   // Current Claude models may spend part of max_tokens on internal processing.
   // Content lint below remains the user-visible length guard.
-  const maxTokens: Record<ContentType, number> = { summary: 180, explanation: 900, origin: 1200, facts: 500 };
+  // Explanation length scales with the statute (the prompt governs it); the
+  // cap is a runaway guard, sized so the longest sections still complete.
+  const maxTokens: Record<ContentType, number> = { summary: 180, explanation: 16000, origin: 1200, facts: 500 };
   const message = await client.messages.create({ model, max_tokens: maxTokens[type], system: instruction, messages: [{ role: "user", content: JSON.stringify(law) }] });
   const body = message.content.filter((block) => block.type === "text").map((block) => block.text).join("\n");
   return { body, model, input: message.usage.input_tokens, output: message.usage.output_tokens, truncated: message.stop_reason === "max_tokens" };

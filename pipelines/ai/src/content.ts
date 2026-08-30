@@ -1,3 +1,5 @@
+import { lintMarkdown } from "@/lib/markdown";
+
 export type ContentType = "summary" | "explanation" | "origin" | "facts";
 export type LawInput = { citation: string; heading: string; bodyText: string; sourceCredit: string | null; enactingPl: string | null; enactedDate: string | null; wordCount: number; amendmentCount: number };
 
@@ -18,6 +20,7 @@ export function lintContent(type: ContentType, body: string): string[] {
   if (/consult (a|your) lawyer/i.test(body) && type === "summary") errors.push("boilerplate in summary");
   if (type === "summary" && (body.length > 500 || words > 70)) errors.push("summary too long");
   if (type === "explanation" && words < 100) errors.push("explanation too short");
+  if (type === "explanation") errors.push(...lintMarkdown(body));
   if (type === "origin" && words > 260) errors.push("origin too long");
   if (type === "facts") {
     const bullets = body.split("\n").filter((line) => line.trimStart().startsWith("- ")).length;

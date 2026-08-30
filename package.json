@@ -27,6 +27,7 @@
     "commander": "^14.0.0",
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.45.2",
+    "mermaid": "^11.17.2",
     "next": "^16.0.0",
     "postgres": "^3.4.5",
     "react": "^19.1.1",

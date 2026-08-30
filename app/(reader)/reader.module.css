@@ -93,6 +93,58 @@ a.trialFlair:hover { text-decoration: underline; }
 .sectionBody :global(.prose-law) p { margin: 0 0 10px; }
 .pendingNote { color: var(--muted); font-style: italic; }
 .translationBody { white-space: pre-line; font-family: Georgia, "Times New Roman", serif; font-size: 14px; }
+/* AI-explanation markdown body (components/reader/markdown-body.tsx).
+   Overrides the pre-line default because the parser handles breaks itself. */
+.mdBody { white-space: normal; }
+.mdBody > :first-child { margin-top: 0; }
+.mdBody > :last-child { margin-bottom: 0; }
+.mdBody p { margin: 8px 0; }
+.mdBody ul, .mdBody ol { margin: 8px 0; padding-left: 24px; }
+.mdBody li { margin: 3px 0; }
+.mdBody li > ul, .mdBody li > ol { margin: 3px 0; }
+.mdBody blockquote { margin: 10px 0 10px 4px; padding: 2px 12px; border-left: 3px solid var(--border-mid); color: var(--text-soft); }
+.mdH1 { margin: 16px 0 6px; font: 700 13px Verdana, Arial, Helvetica, sans-serif; }
+.mdH2 { margin: 12px 0 4px; font: 700 11px Verdana, Arial, Helvetica, sans-serif; text-transform: uppercase; letter-spacing: .05em; color: var(--text-soft); }
+.mdTableWrap { overflow-x: auto; margin: 12px 0; }
+.mdTable { width: min(100%, 650px); margin: 0 auto; border-collapse: collapse; border-spacing: 0; border-top: 3px solid currentColor; border-bottom: 3px solid currentColor; line-height: 1.35; font-size: 13px; }
+.mdTable th { padding: 3px 12px; border-bottom: 1px solid currentColor; text-align: left; vertical-align: bottom; }
+.mdTable td { padding: 3px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border-faint); }
+.mdTable tr:last-child td { border-bottom: none; }
+.mdCallout { display: flex; gap: 10px; margin: 12px 0; padding: 8px 12px; border: 1px solid var(--note-border); background: var(--note-bg); border-radius: 2px; }
+.mdCalloutIcon { flex: none; line-height: 1.65; }
+.mdCalloutBody { min-width: 0; }
+.mdCalloutBody > :first-child { margin-top: 0; }
+.mdCalloutBody > :last-child { margin-bottom: 0; }
+.mdToggle { margin: 12px 0; border: 1px dotted var(--border-mid); border-radius: 2px; padding: 6px 12px; }
+.mdToggle summary { cursor: pointer; font: 700 12px Verdana, Arial, Helvetica, sans-serif; color: var(--text-soft); }
+.mdToggleBody { margin-top: 6px; }
+.mdColumns { display: flex; gap: 20px; margin: 12px 0; }
+.mdColumns > div { flex: 1 1 0; min-width: 0; }
+.mdDiagram { margin: 14px 0; overflow-x: auto; text-align: center; }
+.mdDiagram svg { max-width: 100%; height: auto; }
+:global([data-theme="dark"]) .mdDiagram { background: #f6f7f8; border-radius: 3px; padding: 10px; }
+.mdCode { margin: 10px 0; padding: 8px 10px; background: var(--bg-box); border: 1px solid var(--border-soft); font: 12px/1.5 monospace; overflow-x: auto; white-space: pre; }
+.mdDivider { margin: 14px 0; border: none; border-top: 1px solid var(--border-soft); }
+/* Notion color vocabulary — mid-tones and translucent tints work on both themes. */
+.md_gray { color: var(--muted); }
+.md_brown { color: #8d6748; }
+.md_orange { color: #cc5b00; }
+.md_yellow { color: #a08a00; }
+.md_green { color: #2e7d32; }
+.md_blue { color: #2b6cb0; }
+.md_purple { color: #7b5ea7; }
+.md_pink { color: #b83280; }
+.md_red { color: #c0392b; }
+.md_gray_bg { background: rgba(128, 128, 128, .14); }
+.md_brown_bg { background: rgba(141, 103, 72, .14); }
+.md_orange_bg { background: rgba(255, 130, 0, .14); }
+.md_yellow_bg { background: rgba(220, 190, 0, .16); }
+.md_green_bg { background: rgba(60, 160, 70, .14); }
+.md_blue_bg { background: rgba(50, 120, 200, .14); }
+.md_purple_bg { background: rgba(140, 100, 200, .14); }
+.md_pink_bg { background: rgba(200, 70, 140, .13); }
+.md_red_bg { background: rgba(220, 60, 50, .13); }
+
 .historyList { list-style: none; margin: 0; padding: 0; }
 .historyList li { display: flex; gap: 10px; padding: 3px 0; }
 .historyList b { min-width: 44px; }
