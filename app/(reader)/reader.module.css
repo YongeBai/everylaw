@@ -104,8 +104,8 @@ a.trialFlair:hover { text-decoration: underline; }
 .mdBody li { margin: 3px 0; }
 .mdBody li > ul, .mdBody li > ol { margin: 3px 0; }
 .mdBody blockquote { margin: 10px 0 10px 4px; padding: 2px 12px; border-left: 3px solid var(--border-mid); color: var(--text-soft); }
-.mdH1 { margin: 16px 0 6px; font: 700 13px Verdana, Arial, Helvetica, sans-serif; }
-.mdH2 { margin: 12px 0 4px; font: 700 11px Verdana, Arial, Helvetica, sans-serif; text-transform: uppercase; letter-spacing: .05em; color: var(--text-soft); }
+.mdH1 { margin: 20px 0 6px; font: 700 16px Verdana, Arial, Helvetica, sans-serif; }
+.mdH2 { margin: 18px 0 5px; padding-bottom: 3px; border-bottom: 1px solid var(--border-soft); font: 700 13.5px Verdana, Arial, Helvetica, sans-serif; }
 .mdTableWrap { overflow-x: auto; margin: 12px 0; }
 .mdTable { width: min(100%, 650px); margin: 0 auto; border-collapse: collapse; border-spacing: 0; border-top: 3px solid currentColor; border-bottom: 3px solid currentColor; line-height: 1.35; font-size: 13px; }
 .mdTable th { padding: 3px 12px; border-bottom: 1px solid currentColor; text-align: left; vertical-align: bottom; }
