@@ -21,7 +21,7 @@ if (!(["local", "anthropic", "codex"] as const).includes(options.provider)) thro
 const limit = Number(options.limit);
 if (!Number.isInteger(limit) || limit < 1) throw new Error(`Invalid limit: ${options.limit}`);
 // Keep these explicit so every generated row records the prompt file used.
-const promptVersions: Record<ContentType, string> = { summary: "v2", explanation: "v5", origin: "v2", facts: "v1" };
+const promptVersions: Record<ContentType, string> = { summary: "v2", explanation: "v6", origin: "v2", facts: "v1" };
 if (options.type && !validTypes.includes(options.type as ContentType)) throw new Error(`Invalid content type: ${options.type}`);
 const types: ContentType[] = options.type ? [options.type as ContentType] : validTypes;
 const citations = options.citations?.split(",").map((citation) => citation.trim()).filter(Boolean);
