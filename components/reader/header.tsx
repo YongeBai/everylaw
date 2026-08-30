@@ -40,7 +40,7 @@ export function RHeader({ activeTitle }: { activeTitle?: string }) {
       <Link href="/r" className={styles.topbarMore}>browse all titles »</Link>
     </div>
     <header className={styles.header}>
-      <Link href="/" className={styles.logo}><span className={styles.logoMark} aria-hidden>§</span>everylaw<i>the front page of the U.S. Code</i></Link>
+      <Link href="/" className={styles.logo}><span className={styles.logoMark} aria-hidden><span>§</span></span>everylaw<i>the front page of the U.S. Code</i></Link>
       <form className={styles.headerSearch} onSubmit={(event) => { event.preventDefault(); if (query.trim()) router.push(`/search?q=${encodeURIComponent(query)}`); }}>
         <label className="sr-only" htmlFor="r-search">Search laws and sections</label>
         <input id="r-search" data-testid="r-search" value={query} onChange={(event) => { setQuery(event.target.value); setSearching(event.target.value.trim().length >= 2); }} placeholder="search laws & sections" autoComplete="off" />

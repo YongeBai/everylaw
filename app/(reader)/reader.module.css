@@ -14,6 +14,7 @@
 .logo { display: flex; align-items: baseline; gap: 6px; font-size: 18px; font-weight: 700; color: var(--text) !important; }
 .logo i { font-size: 10px; font-weight: 400; font-style: normal; color: var(--text-soft); }
 .logoMark { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--orangered); color: #fff; font-size: 14px; align-self: center; }
+.logoMark span { line-height: 1; transform: translateY(-1px); }
 .headerSearch { position: relative; flex: 1; max-width: 420px; }
 .headerSearch input { width: 100%; border: 1px solid var(--header-border); padding: 5px 8px; font: inherit; background: var(--bg); color: var(--text); }
 .searchDrop { position: absolute; top: 100%; left: 0; right: 0; z-index: 30; background: var(--bg); border: 1px solid var(--header-border); border-top: 0; }
