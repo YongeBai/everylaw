@@ -1,5 +1,9 @@
 import "./env.js";
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Command } from "commander";
 import { sql } from "drizzle-orm";
 import { db, sqlClient } from "@/db";
@@ -7,17 +11,17 @@ import { deterministicContent, lintContent, type ContentType, type LawInput } fr
 
 const options = new Command()
   .option("--limit <number>", "law limit", "1000")
-  .option("--provider <provider>", "local or anthropic", "local")
+  .option("--provider <provider>", "local, anthropic, or codex", "local")
   .option("--type <type>", "generate only summary, explanation, origin, or facts")
   .option("--publish", "publish instead of creating drafts")
   .option("--citations <citations>", "comma-separated citations to (re)generate, replacing published content")
-  .parse().opts<{ limit: string; provider: "local"|"anthropic"; type?: string; publish?: boolean; citations?: string }>();
+  .parse().opts<{ limit: string; provider: "local"|"anthropic"|"codex"; type?: string; publish?: boolean; citations?: string }>();
 const validTypes: ContentType[] = ["summary", "explanation", "origin", "facts"];
-if (!(["local", "anthropic"] as const).includes(options.provider)) throw new Error(`Invalid provider: ${options.provider}`);
+if (!(["local", "anthropic", "codex"] as const).includes(options.provider)) throw new Error(`Invalid provider: ${options.provider}`);
 const limit = Number(options.limit);
 if (!Number.isInteger(limit) || limit < 1) throw new Error(`Invalid limit: ${options.limit}`);
 // Keep these explicit so every generated row records the prompt file used.
-const promptVersions: Record<ContentType, string> = { summary: "v2", explanation: "v4", origin: "v2", facts: "v1" };
+const promptVersions: Record<ContentType, string> = { summary: "v2", explanation: "v5", origin: "v2", facts: "v1" };
 if (options.type && !validTypes.includes(options.type as ContentType)) throw new Error(`Invalid content type: ${options.type}`);
 const types: ContentType[] = options.type ? [options.type as ContentType] : validTypes;
 const citations = options.citations?.split(",").map((citation) => citation.trim()).filter(Boolean);
@@ -68,6 +72,30 @@ async function anthropicGenerate(type: ContentType, law: LawInput): Promise<Gene
   return { body, model, input: message.usage.input_tokens, output: message.usage.output_tokens, truncated: message.stop_reason === "max_tokens" };
 }
 
+/** Generation via the Codex CLI (subscription-billed, no API key). The agent
+ * runs read-only and ephemeral; the final message is the translation. */
+async function codexGenerate(type: ContentType, law: LawInput): Promise<Generated> {
+  const model = process.env.CODEX_MODEL || "gpt-5.6-luna";
+  const effort = process.env.CODEX_REASONING_EFFORT || "medium";
+  let instructionPromise = promptCache.get(type);
+  if (!instructionPromise) {
+    instructionPromise = readFile(new URL(`../prompts/${type}.${promptVersions[type]}.md`, import.meta.url), "utf8");
+    promptCache.set(type, instructionPromise);
+  }
+  const instruction = await instructionPromise;
+  const outFile = join(tmpdir(), `everylaw-codex-${randomUUID()}.txt`);
+  const prompt = `${instruction}\n\n<law-json>\n${JSON.stringify(law)}\n</law-json>`;
+  const args = ["exec", "-m", model, "-c", `model_reasoning_effort=${effort}`, "-s", "read-only", "--ephemeral", "--skip-git-repo-check", "-o", outFile, prompt];
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn("codex", args, { stdio: ["ignore", "ignore", "inherit"] });
+    child.on("error", reject);
+    child.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`codex exec exited with ${code}`))));
+  });
+  const body = (await readFile(outFile, "utf8")).trim();
+  await rm(outFile, { force: true });
+  return { body, model: `codex:${model}@${effort}`, input: 0, output: 0 };
+}
+
 let created = 0;
 let skipped = 0;
 let inputTokens = 0;
@@ -75,7 +103,9 @@ let outputTokens = 0;
 for (const row of rows) {
   const law: LawInput = { citation: String(row.citation), heading: String(row.heading), bodyText: String(row.body_text), sourceCredit: row.source_credit ? String(row.source_credit) : null, enactingPl: row.enacting_pl ? String(row.enacting_pl) : null, enactedDate: row.enacted_date ? String(row.enacted_date) : null, wordCount: Number(row.word_count), amendmentCount: Number(row.amendment_count) };
   for (const type of types) {
-    const generated: Generated = options.provider === "anthropic" ? await anthropicGenerate(type, law) : { body: deterministicContent(type, law), model: "local-deterministic", input: 0, output: 0 };
+    const generated: Generated = options.provider === "anthropic" ? await anthropicGenerate(type, law)
+      : options.provider === "codex" ? await codexGenerate(type, law)
+      : { body: deterministicContent(type, law), model: "local-deterministic", input: 0, output: 0 };
     inputTokens += generated.input;
     outputTokens += generated.output;
     const errors = lintContent(type, generated.body);

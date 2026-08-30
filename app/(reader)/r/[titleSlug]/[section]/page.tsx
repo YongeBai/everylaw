@@ -16,6 +16,9 @@ import { OfficialText } from "@/components/reader/official-text";
 import { Comments } from "@/components/reader/comments";
 import { CitationText } from "@/components/reader/citation-text";
 import { MarkdownBody } from "@/components/reader/markdown-body";
+import { TermCards } from "@/components/reader/term-cards";
+import { annotateTerms } from "@/lib/annotate-terms";
+import { parseBlocks } from "@/lib/markdown";
 import { linkSectionReferencesInHtml } from "@/lib/citations";
 import styles from "../../../reader.module.css";
 
@@ -45,9 +48,16 @@ export default async function RPostPage({ params }: Props) {
     { title: law.title, section: law.num, excludeTerms: [...locallyDefinedTerms, ...definedTerms.map((term) => term.term)] },
   );
   // The card only needs the terms that actually got starred in this body.
+  const termCard = (term: (typeof definedTerms)[number]) => ({ id: term.id, term: term.term, definition: term.definition, scopeType: term.scopeType, citation: term.citation, heading: term.heading, url: lawUrl(term) });
   const starredTerms = definedTerms
     .filter((term) => officialHtml.includes(`data-def="${term.id}"`))
-    .map((term) => ({ id: term.id, term: term.term, definition: term.definition, scopeType: term.scopeType, citation: term.citation, heading: term.heading, url: lawUrl(term) }));
+    .map(termCard);
+  // The translation gets the same two annotation layers, applied to its
+  // markdown AST (lib/annotate-terms) instead of the official HTML.
+  const translation = content.explanation
+    ? annotateTerms(parseBlocks(content.explanation.body).blocks, definedTerms, { title: law.title, section: law.num, excludeTerms: [...locallyDefinedTerms, ...definedTerms.map((term) => term.term)] })
+    : null;
+  const translationTerms = translation ? definedTerms.filter((term) => translation.markedIds.has(term.id)).map(termCard) : [];
 
   return <div className={styles.page}>
     <RHeader activeTitle={titleSlug} />
@@ -63,8 +73,10 @@ export default async function RPostPage({ params }: Props) {
               <div className={styles.sectionHead}>in plain english<span className={styles.aiBadge}>AI-generated · not legal advice</span></div>
               <div className={styles.sectionBody}>
                 {content.summary && <p className={styles.translationBody} style={{ fontWeight: 700, marginTop: 0 }}><CitationText title={law.title}>{content.summary.body}</CitationText></p>}
-                {content.explanation
-                  ? <div className={styles.translationBody} style={{ marginTop: content.summary ? 10 : 0 }}><MarkdownBody source={content.explanation.body} title={law.title} /></div>
+                {translation
+                  ? <div className={styles.translationBody} style={{ marginTop: content.summary ? 10 : 0 }}>
+                    <TermCards statutoryTerms={translationTerms} wikiUrl={titleWikiUrl} title={law.title}><MarkdownBody blocks={translation.blocks} title={law.title} /></TermCards>
+                  </div>
                   : <p className={styles.pendingNote}>A translation hasn’t been published for this section yet. The official text below is complete and authoritative.</p>}
                 {content.facts && <div style={{ marginTop: 12, borderTop: "1px dotted var(--border-mid)", paddingTop: 10 }}>
                   <p style={{ margin: "0 0 4px", font: "700 10px Verdana, sans-serif", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>facts</p>

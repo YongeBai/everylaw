@@ -2,25 +2,31 @@ import Link from "next/link";
 import { Fragment } from "react";
 import { CitationText } from "@/components/reader/citation-text";
 import { MermaidDiagram } from "@/components/reader/mermaid-diagram";
-import { parseBlocks, type Block, type Inline, type ListItem } from "@/lib/markdown";
+import { parseBlocks, type Block, type ListItem } from "@/lib/markdown";
+import type { TermInline } from "@/lib/annotate-terms";
 import styles from "@/app/(reader)/reader.module.css";
 
 /**
  * Renders AI-explanation bodies written in the Notion-flavored markdown
  * subset (lib/markdown.ts). Every plain text run flows through CitationText
- * so U.S. Code references stay linked, including inside table cells.
+ * so U.S. Code references stay linked, including inside table cells. Pass
+ * pre-parsed `blocks` (e.g. term-annotated via lib/annotate-terms) to skip
+ * the parse; term marks render with the same data attributes the official
+ * pane uses, so TermCards can bind definition cards to them.
  */
-export function MarkdownBody({ source, title }: { source: string; title?: number }) {
-  const { blocks } = parseBlocks(source);
-  return <div className={styles.mdBody}><BlockList blocks={blocks} title={title} /></div>;
+export function MarkdownBody({ source, blocks, title }: { source?: string; blocks?: Block[]; title?: number }) {
+  const resolved = blocks ?? parseBlocks(source ?? "").blocks;
+  return <div className={styles.mdBody}><BlockList blocks={resolved} title={title} /></div>;
 }
 
 const colorClass = (color: string | undefined) => (color ? styles[`md_${color}`] : undefined);
 
-function InlineRun({ nodes, title }: { nodes: Inline[]; title?: number }) {
+function InlineRun({ nodes, title }: { nodes: TermInline[]; title?: number }) {
   return nodes.map((node, index) => {
     switch (node.kind) {
       case "text": return <Fragment key={index}><CitationText title={title}>{node.text}</CitationText></Fragment>;
+      case "defterm": return <mark key={index} className="law-term law-term-defined" data-def={node.id} role="button" tabIndex={0}>{node.text}<sup aria-hidden="true">*</sup></mark>;
+      case "artterm": return <mark key={index} className="law-term" data-term={node.term} role="button" tabIndex={0}>{node.text}</mark>;
       case "break": return <br key={index} />;
       case "code": return <code key={index}>{node.text}</code>;
       case "strong": return <strong key={index}><InlineRun nodes={node.children} title={title} /></strong>;
