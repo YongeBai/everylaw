@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { readLocalVotes, recordLocalVote, removeLocalVote } from "@/lib/local-history";
+import { hasInteracted, readLocalVotes, recordLocalVote, removeLocalVote } from "@/lib/local-history";
 import { directionToVote, emitPostVote, optimisticVoteCounts, type PostVoteCounts, type VoteDirection } from "@/lib/vote-sync";
 import styles from "@/app/(reader)/reader.module.css";
 
@@ -43,12 +43,14 @@ export function VoteArrows({ nodeId, citation, heading, url, keepCount, dissolve
   useEffect(() => {
     // Fast local seed for every row; on post pages also ask the server, whose
     // cookie identity outlives localStorage (fresh browser, cleared storage).
+    // Only for browsers that have ever voted or argued: this lookup is the one
+    // per-view database query left, and crawlers must not trigger it.
     const stored = readLocalVotes()[nodeId];
     // localStorage is only readable after hydration; this one-time sync seed
     // cannot move into initial state without a server/client hydration mismatch.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stored) { mineRef.current = stored.direction; setMine(stored.direction); }
-    if (size !== "post") return;
+    if (size !== "post" || !hasInteracted()) return;
     const startingSequence = sequenceRef.current;
     const controller = new AbortController();
     fetch(`/api/vote?nodeId=${nodeId}`, { signal: controller.signal }).then(async (response) => {

@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
+import { unstable_cache } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { getAiContent, getLawById, getLawLiteById, getTakes, getTermsDefinedByLaw, type LawSummary } from "@/lib/data";
-import { viewerVoterHash } from "@/lib/viewer";
+import { CORPUS_TAG, DOCKET_TAG, HOME_TAG, lawTag } from "@/lib/cache-tags";
 import { docketDayKey } from "@/lib/docket-day";
 
 /** Trial days roll over at midnight Pacific time. */
@@ -72,10 +73,32 @@ export type Docket = {
   locallyDefinedTerms: string[];
   yesterday: YesterdayVerdict | null;
   todayKey: string;
+  /** When this was read from the database — a just-computed docket means the trial day may have rolled over. */
+  computedAt: number;
 };
 
-export async function getDocket(): Promise<Docket | null> {
+/**
+ * The docket, cached per trial day: the day key is part of the cache key, so
+ * the first view after midnight Pacific runs the rollover below exactly once
+ * and every later view that day is served without touching the database.
+ * A vote or argument anywhere purges it (DOCKET_TAG).
+ */
+export function getDocket(): Promise<Docket | null> {
   const todayKey = dayKey();
+  return unstable_cache(() => loadDocket(todayKey), ["docket", "v1", todayKey], { tags: [DOCKET_TAG, CORPUS_TAG] })();
+}
+
+/**
+ * A docket computed moments ago means the trial day may have just rolled over,
+ * and the pages wearing "on trial today" or a verdict flair were cached before
+ * it did. Returns the tags to purge then; nothing for a docket read from cache.
+ */
+export function rolloverStaleTags(docket: Docket): string[] {
+  if (Date.now() - docket.computedAt > 60_000) return [];
+  return [lawTag(docket.law.id), ...(docket.yesterday ? [lawTag(docket.yesterday.law.id)] : []), HOME_TAG];
+}
+
+async function loadDocket(todayKey: string): Promise<Docket | null> {
   const todayId = await getOrRecordTodayTrial(todayKey);
   if (!todayId) return null;
   await closePastTrials(todayKey);
@@ -91,7 +114,7 @@ export async function getDocket(): Promise<Docket | null> {
   const [law, aiContent, takes, yesterdayLaw, locallyDefinedTerms] = await Promise.all([
     getLawById(todayId),
     getAiContent(todayId),
-    viewerVoterHash().then((hash) => getTakes(todayId, hash)),
+    getTakes(todayId),
     // Yesterday's law only feeds the verdict recap line — skip the statute bodies.
     yesterdayId === null || yesterdayId === todayId ? Promise.resolve(null) : getLawLiteById(yesterdayId),
     getTermsDefinedByLaw(todayId),
@@ -107,5 +130,6 @@ export async function getDocket(): Promise<Docket | null> {
       ? { law: yesterdayLaw, keepCount: Number(yesterdaySnap.keep_count ?? 0), dissolveCount: Number(yesterdaySnap.dissolve_count ?? 0) }
       : null,
     todayKey,
+    computedAt: Date.now(),
   };
 }

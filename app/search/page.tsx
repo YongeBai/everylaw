@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { searchRPosts } from "@/lib/reddit-data";
+import { searchRPostsCached } from "@/lib/cached";
 import { RHeader } from "@/components/reader/header";
 import { PostList } from "@/components/reader/post-list";
 import styles from "@/app/(reader)/reader.module.css";
 
 export const metadata: Metadata = { title: "search — everylaw" };
-export const dynamic = "force-dynamic";
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const query = (await searchParams).q?.slice(0, 100) || "";
-  const results = query ? await searchRPosts(query) : [];
+  const results = query ? await searchRPostsCached(query) : [];
 
   return <div className={styles.page}>
     <RHeader />

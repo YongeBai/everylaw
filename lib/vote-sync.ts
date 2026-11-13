@@ -8,6 +8,9 @@ export type TakeVoteCounts = { upvoteCount: number; downvoteCount: number };
 
 const POST_VOTE_EVENT = "everylaw:post-vote";
 
+/** Set by the server once a browser has voted or argued; readable by client code (see lib/local-history hasInteracted). */
+export const ACTIVE_COOKIE = "everylaw_active";
+
 type Detail = { nodeId: number; vote: PostVote | null } & PostVoteCounts;
 
 export function emitPostVote(nodeId: number, vote: PostVote | null, counts: PostVoteCounts) {

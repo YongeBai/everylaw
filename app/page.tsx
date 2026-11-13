@@ -2,17 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { RHeader } from "@/components/reader/header";
 import { PostList } from "@/components/reader/post-list";
-import { getCorpusStats } from "@/lib/data";
-import { getRPosts, isSort, R_SORTS, type RSort } from "@/lib/reddit-data";
+import { getCorpusStatsCached, getRPostsCached } from "@/lib/cached";
+import { isSort, R_SORTS, type RSort } from "@/lib/reddit-data";
 import styles from "@/app/(reader)/reader.module.css";
 
 export const metadata: Metadata = { title: "EveryLaw - the front page of the U.S. Code", description: "Every federal law, readable and judged in public: plain-English translations, real history, and a keep-or-dissolve signal on each section." };
-export const dynamic = "force-dynamic";
 
 export default async function FrontPage({ searchParams }: { searchParams: Promise<{ sort?: string }> }) {
   const { sort: raw } = await searchParams;
   const sort: RSort = raw && isSort(raw) ? raw : "hot";
-  const [posts, stats] = await Promise.all([getRPosts(sort), getCorpusStats()]);
+  const [posts, stats] = await Promise.all([getRPostsCached(sort), getCorpusStatsCached()]);
 
   return <div className={styles.page}>
     <RHeader />

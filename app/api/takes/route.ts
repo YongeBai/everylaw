@@ -4,16 +4,32 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { isSameOrigin, requestIdentity } from "@/lib/security";
 import { checkRateLimit, recordInteraction } from "@/lib/rate-limit";
+import { getTakes } from "@/lib/data";
+import { titleFromIdentifier } from "@/lib/reddit-format";
+import { markActiveViewer, revalidateLawActivity } from "@/lib/revalidate";
 import { directionToVote } from "@/lib/vote-sync";
 
 const schema = z.object({ nodeId: z.number().int().positive(), body: z.string().trim().min(3).max(280), website: z.string().max(0), parentId: z.number().int().positive().optional() });
 const blocked = /\b(kill yourself|nazi|racial slur)\b/i;
 
+/** A law's arguments with this viewer's own marks (mine, my vote) — the cached page carries neither. */
+export async function GET(request: NextRequest) {
+  try {
+    const nodeId = Number(request.nextUrl.searchParams.get("nodeId"));
+    if (!Number.isInteger(nodeId) || nodeId < 1) return NextResponse.json({ error: "Invalid section" }, { status: 400 });
+    const identity = requestIdentity(request);
+    return NextResponse.json({ takes: await getTakes(nodeId, identity.voterHash) });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Load a page")) return NextResponse.json({ error: error.message }, { status: 403 });
+    console.error("takes lookup failed", error); return NextResponse.json({ error: "Could not load arguments" }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!isSameOrigin(request)) return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
     const input = schema.parse(await request.json()); const identity = requestIdentity(request);
-    const target = await db.execute(sql`SELECT 1 FROM law_nodes WHERE id=${input.nodeId} AND node_type='section'`);
+    const target = await db.execute(sql`SELECT identifier FROM law_nodes WHERE id=${input.nodeId} AND node_type='section'`);
     if (!target[0]) return NextResponse.json({ error: "Section not found" }, { status: 404 });
     if (!await checkRateLimit("take", identity)) return NextResponse.json({ error: "Take limit reached. Try again later." }, { status: 429 });
     if (blocked.test(input.body)) return NextResponse.json({ error: "That argument did not pass moderation." }, { status: 422 });
@@ -28,7 +44,8 @@ export async function POST(request: NextRequest) {
     await recordInteraction("take", identity);
     const direction = voteRows[0]?.direction;
     const row = rows[0]!;
-    return NextResponse.json({ take: { id: Number(row.id), body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count), parentId: row.parent_id === null ? null : Number(row.parent_id), createdAt: String(row.created_at), vote: directionToVote(direction === null || direction === undefined ? null : String(direction)), myVote: null, mine: true } }, { status: 201 });
+    revalidateLawActivity(input.nodeId, titleFromIdentifier(String(target[0].identifier)) || null);
+    return markActiveViewer(NextResponse.json({ take: { id: Number(row.id), body: String(row.body), upvoteCount: Number(row.upvote_count), downvoteCount: Number(row.downvote_count), parentId: row.parent_id === null ? null : Number(row.parent_id), createdAt: String(row.created_at), vote: directionToVote(direction === null || direction === undefined ? null : String(direction)), myVote: null, mine: true } }, { status: 201 }));
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Use 3–280 characters." }, { status: 400 });
     if (error instanceof Error && error.message.includes("Load a page")) return NextResponse.json({ error: error.message }, { status: 403 });

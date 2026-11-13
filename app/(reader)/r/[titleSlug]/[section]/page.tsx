@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { getAiContent, getDefinedTermsInScope, getLaw, getLawNavigation, getTakes, getTermsDefinedByLaw } from "@/lib/data";
-import { viewerVoterHash } from "@/lib/viewer";
-import { getLatestTrial } from "@/lib/trials";
+import { getLawLive, getLawPage } from "@/lib/cached";
 import { TrialFlair } from "@/components/reader/trial-flair";
 import { parseHistory } from "@/lib/history";
 import { highlightTerms, markDefinedTerms } from "@/lib/terms";
 import { agePhrase, lawUrl, officialSourceUrl, subredditUrl, wikiUrl } from "@/lib/reddit-format";
-import { subredditSlug } from "@/lib/title-names";
+import { subredditSlug, titleNumberFromSlug } from "@/lib/title-names";
 import { RHeader } from "@/components/reader/header";
 import { VoteArrows } from "@/components/reader/vote-arrows";
 import { VoteTotals } from "@/components/reader/vote-totals";
@@ -23,23 +21,34 @@ import { linkSectionReferencesInHtml } from "@/lib/citations";
 import styles from "../../../reader.module.css";
 
 type Props = { params: Promise<{ titleSlug: string; section: string }> };
-export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+// Static per law, generated on first request and then served from cache until
+// a tag purge (lib/cache-tags.ts). Nothing here may read cookies or headers:
+// one viewer-specific read would make all ~50k law pages hit the database on
+// every view again. Per-viewer state loads client-side instead.
+export const revalidate = false;
+export function generateStaticParams() { return []; }
+
+async function loadPage({ params }: Props) {
   const { titleSlug, section } = await params;
-  const law = await getLaw(titleSlug, decodeURIComponent(section));
+  const titleNum = titleNumberFromSlug(titleSlug);
+  return { titleSlug, section, data: titleNum ? await getLawPage(titleNum, decodeURIComponent(section)) : null };
+}
+
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const law = (await loadPage(props)).data?.law;
   if (!law) return { title: "Section not found" };
   return { title: `${law.citation} — ${law.heading}`, description: `Read ${law.citation} in plain English, see its history, and make the case to keep or dissolve it.`, alternates: { canonical: lawUrl(law) } };
 }
 
-export default async function RPostPage({ params }: Props) {
-  const { titleSlug, section } = await params;
-  const law = await getLaw(titleSlug, decodeURIComponent(section));
-  if (!law) notFound();
+export default async function RPostPage(props: Props) {
+  const { titleSlug, section, data } = await loadPage(props);
+  if (!data) notFound();
+  const { law, content, navigation, definedTerms, locallyDefinedTerms } = data;
   const url = lawUrl(law);
   const requestedUrl = `/r/${titleSlug}/${encodeURIComponent(decodeURIComponent(section))}`;
   if (requestedUrl !== url) permanentRedirect(url);
-  const [content, takes, navigation, definedTerms, locallyDefinedTerms, trial] = await Promise.all([getAiContent(law.id), viewerVoterHash().then((hash) => getTakes(law.id, hash)), getLawNavigation(law), getDefinedTermsInScope(law), getTermsDefinedByLaw(law.id), getLatestTrial(law.id)]);
+  const { keepCount, dissolveCount, takes, trial } = await getLawLive(law.id);
   const history = parseHistory(law.sourceCredit);
   const sourceUrl = officialSourceUrl(law.title, law.num);
   const titleWikiUrl = wikiUrl(law.title);
@@ -64,10 +73,10 @@ export default async function RPostPage({ params }: Props) {
     <div className={styles.shell}>
       <main className={styles.main}>
         <article className={styles.post}>
-          <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={law.keepCount} dissolveCount={law.dissolveCount} size="post" />
+          <VoteArrows nodeId={law.id} citation={law.citation} heading={law.heading} url={url} keepCount={keepCount} dissolveCount={dissolveCount} size="post" />
           <div className={styles.postHead}>
             <h1><Link href={sourceUrl} target="_blank" rel="noopener">{law.citation} — {law.heading}</Link>{law.status !== "active" && <span className={styles.postFlair}>{law.status}</span>}<TrialFlair trial={trial} /></h1>
-            <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={subredditUrl(law.title)}>r/{subredditSlug(law.title)}</Link> · {law.wordCount.toLocaleString()} words<VoteTotals nodeId={law.id} keepCount={law.keepCount} dissolveCount={law.dissolveCount} always /></p>
+            <p className={styles.tagline}>submitted {agePhrase(law.enactedDate)} by {law.enactingPl ?? "Congress"} to <Link href={subredditUrl(law.title)}>r/{subredditSlug(law.title)}</Link> · {law.wordCount.toLocaleString()} words<VoteTotals nodeId={law.id} keepCount={keepCount} dissolveCount={dissolveCount} always /></p>
 
             <section className={styles.section} data-testid="post-translation">
               <div className={styles.sectionHead}>in plain english<span className={styles.aiBadge}>AI-generated · not legal advice</span></div>

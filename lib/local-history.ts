@@ -1,5 +1,7 @@
 "use client";
 
+import { ACTIVE_COOKIE } from "@/lib/vote-sync";
+
 /**
  * Account-less personal layer, kept in this browser only (localStorage).
  * Records each keep/dissolve vote with the public split at the time, so the
@@ -47,6 +49,20 @@ export function removeLocalVote(nodeId: number): void {
   } catch {
     /* storage unavailable — the server-side vote is still removed */
   }
+}
+
+/**
+ * Has this browser ever voted or argued? Pages are served from cache with no
+ * per-viewer state, so only these viewers ask the server for theirs. Everyone
+ * else — crawlers included — costs no database query per view.
+ */
+export function hasInteracted(): boolean {
+  try {
+    if (document.cookie.split("; ").includes(`${ACTIVE_COOKIE}=1`)) return true;
+  } catch {
+    /* cookies unreadable — fall through to local votes */
+  }
+  return Object.keys(readLocalVotes()).length > 0;
 }
 
 /** Share of the public that voted AGAINST you at the time you voted (0–1). */

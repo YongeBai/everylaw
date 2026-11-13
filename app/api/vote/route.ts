@@ -4,6 +4,8 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { isSameOrigin, requestIdentity } from "@/lib/security";
 import { checkRateLimit, recordInteraction } from "@/lib/rate-limit";
+import { titleFromIdentifier } from "@/lib/reddit-format";
+import { markActiveViewer, revalidateLawActivity } from "@/lib/revalidate";
 
 const inputSchema = z.object({ nodeId: z.number().int().positive(), direction: z.enum(["keep", "dissolve"]).nullable() });
 
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (!isSameOrigin(request)) return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
     const input = inputSchema.parse(await request.json());
     const identity = requestIdentity(request);
-    const target = await db.execute(sql`SELECT 1 FROM law_nodes WHERE id=${input.nodeId} AND node_type='section'`);
+    const target = await db.execute(sql`SELECT identifier FROM law_nodes WHERE id=${input.nodeId} AND node_type='section'`);
     if (!target[0]) return NextResponse.json({ error: "Section not found" }, { status: 404 });
     if (!await checkRateLimit("vote", identity)) return NextResponse.json({ error: "Vote limit reached. Try again later." }, { status: 429 });
     if (input.direction === null) {
@@ -39,7 +41,8 @@ export async function POST(request: NextRequest) {
       db.execute(sql`SELECT COALESCE(a.keep_count,0) keep_count, COALESCE(a.dissolve_count,0) dissolve_count, COALESCE(a.total_count,0) total_count, COALESCE(a.dissolve_ratio,0) dissolve_ratio FROM law_nodes n LEFT JOIN vote_aggregates a ON a.node_id=n.id WHERE n.id=${input.nodeId}`),
     ]);
     const row = aggregate[0]!;
-    return NextResponse.json({ keepCount: Number(row.keep_count), dissolveCount: Number(row.dissolve_count), totalCount: Number(row.total_count), dissolveRatio: Number(row.dissolve_ratio), direction: input.direction });
+    revalidateLawActivity(input.nodeId, titleFromIdentifier(String(target[0].identifier)) || null);
+    return markActiveViewer(NextResponse.json({ keepCount: Number(row.keep_count), dissolveCount: Number(row.dissolve_count), totalCount: Number(row.total_count), dissolveRatio: Number(row.dissolve_ratio), direction: input.direction }));
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid vote" }, { status: 400 });
     if (error instanceof Error && error.message.includes("Load a page")) return NextResponse.json({ error: error.message }, { status: 403 });

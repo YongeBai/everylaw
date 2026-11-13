@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { isSameOrigin, requestIdentity } from "@/lib/security";
 import { checkRateLimit, recordInteraction } from "@/lib/rate-limit";
+import { markActiveViewer, revalidateLawActivity } from "@/lib/revalidate";
 
 const schema = z.object({ takeId: z.number().int().positive(), direction: z.union([z.literal(1), z.literal(-1)]).nullable().optional().default(1) });
 
@@ -35,10 +36,12 @@ export async function POST(request: NextRequest) {
     }
     const [, rows] = await Promise.all([
       recordInteraction("take-vote", identity),
-      db.execute(sql`SELECT upvote_count, downvote_count FROM takes WHERE id=${takeId} AND moderation_status='published'`),
+      db.execute(sql`SELECT node_id, upvote_count, downvote_count FROM takes WHERE id=${takeId} AND moderation_status='published'`),
     ]);
     if (!rows[0]) return NextResponse.json({ error: "Argument not found" }, { status: 404 });
-    return NextResponse.json({ upvoteCount: Number(rows[0].upvote_count), downvoteCount: Number(rows[0].downvote_count), direction });
+    // Feeds show how many arguments a law has, not their scores — leave them cached.
+    revalidateLawActivity(Number(rows[0].node_id), null, { feeds: false });
+    return markActiveViewer(NextResponse.json({ upvoteCount: Number(rows[0].upvote_count), downvoteCount: Number(rows[0].downvote_count), direction }));
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid argument" }, { status: 400 });
     if (error instanceof Error && error.message.includes("Load a page")) return NextResponse.json({ error: error.message }, { status: 403 });

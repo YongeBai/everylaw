@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CitationText } from "@/components/reader/citation-text";
-import { getTitleWikiTerms } from "@/lib/data";
+import { getTitleWikiTermsCached } from "@/lib/cached";
 import { lawUrl } from "@/lib/reddit-format";
 import styles from "@/app/(reader)/reader.module.css";
 
@@ -19,7 +19,7 @@ const SCOPE_LABELS: Record<string, string> = {
 export async function TitleWiki({ titleNum, canonical, displaySlug, heading, sectionCount, page }: {
   titleNum: number; canonical: string; displaySlug: string; heading: string; sectionCount: number; page: number;
 }) {
-  const wiki = await getTitleWikiTerms(titleNum, PAGE_SIZE, (page - 1) * PAGE_SIZE);
+  const wiki = await getTitleWikiTermsCached(titleNum, PAGE_SIZE, (page - 1) * PAGE_SIZE);
   const pageCount = Math.max(1, Math.ceil(wiki.termCount / PAGE_SIZE));
   const pageUrl = (target: number) => `/r/${canonical}?${new URLSearchParams({ view: "wiki", ...(target > 1 ? { page: String(target) } : {}) })}`;
 

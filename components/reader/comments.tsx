@@ -1,14 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { hasInteracted } from "@/lib/local-history";
 import { onPostVote, optimisticTakeVoteCounts, type PostVote, type TakeVoteCounts, type TakeVoteDirection } from "@/lib/vote-sync";
 import { CitationText } from "@/components/reader/citation-text";
 import styles from "@/app/(reader)/reader.module.css";
 
 export type RComment = { id: number; body: string; upvoteCount: number; downvoteCount: number; parentId: number | null; createdAt: string; vote: PostVote | null; myVote: 1 | -1 | null; mine: boolean };
 
-function ago(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
+// The page HTML is cached for days, so a relative time rendered on the server
+// would freeze ("just now" forever). Until the browser supplies the clock, show
+// the date; after hydration, the familiar relative phrase.
+function ago(iso: string, now: number | null): string {
+  if (now === null) return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  const ms = now - new Date(iso).getTime();
   const minutes = Math.floor(ms / 60000);
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
@@ -46,8 +51,8 @@ function CommentForm({ nodeId, parentId, onPosted, onCancel }: { nodeId: number;
   </form>;
 }
 
-function CommentNode({ comment, childrenOf, nodeId, title, onPosted, onVoted }: {
-  comment: RComment; childrenOf: Map<number | null, RComment[]>; nodeId: number; title?: number;
+function CommentNode({ comment, childrenOf, nodeId, title, now, onPosted, onVoted }: {
+  comment: RComment; childrenOf: Map<number | null, RComment[]>; nodeId: number; title?: number; now: number | null;
   onPosted: (comment: RComment) => void; onVoted: (id: number, up: number, down: number, myVote: 1 | -1 | null) => void;
 }) {
   const [replying, setReplying] = useState(false);
@@ -108,7 +113,7 @@ function CommentNode({ comment, childrenOf, nodeId, title, onPosted, onVoted }: 
         <VoteBadge id={comment.id} vote={comment.vote} />
         <b data-testid={`cscore-${comment.id}`}>{score} point{Math.abs(score) === 1 ? "" : "s"}</b>
         <span>({comment.upvoteCount}|{comment.downvoteCount})</span>
-        <time dateTime={comment.createdAt} suppressHydrationWarning>{ago(comment.createdAt)}</time>
+        <time dateTime={comment.createdAt}>{ago(comment.createdAt, now)}</time>
         {voteError && <span role="alert" className={styles.formError}>{voteError}</span>}
       </p>
       {!collapsed && <>
@@ -118,7 +123,7 @@ function CommentNode({ comment, childrenOf, nodeId, title, onPosted, onVoted }: 
           <span className={styles.linkQuiet}>permalink</span>
         </p>
         {replying && <CommentForm nodeId={nodeId} parentId={comment.id} onPosted={onPosted} onCancel={() => setReplying(false)} />}
-        {kids.map((kid) => <CommentNode key={kid.id} comment={kid} childrenOf={childrenOf} nodeId={nodeId} title={title} onPosted={onPosted} onVoted={onVoted} />)}
+        {kids.map((kid) => <CommentNode key={kid.id} comment={kid} childrenOf={childrenOf} nodeId={nodeId} title={title} now={now} onPosted={onPosted} onVoted={onVoted} />)}
       </>}
     </div>
   </div>;
@@ -126,6 +131,28 @@ function CommentNode({ comment, childrenOf, nodeId, title, onPosted, onVoted }: 
 
 export function Comments({ nodeId, initial, title }: { nodeId: number; initial: RComment[]; title?: number }) {
   const [comments, setComments] = useState<RComment[]>(initial);
+  const [now, setNow] = useState<number | null>(null);
+  const hasInitial = initial.length > 0;
+
+  useEffect(() => {
+    // The clock is only trustworthy in the browser (see ago()); this one-time
+    // seed cannot move into initial state without a hydration mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(Date.now());
+    // `initial` comes from a shared cached page: no "mine", no "my vote". A
+    // browser that has ever voted or argued asks for its own marks; nobody
+    // else does, so an ordinary view costs no database query.
+    if (!hasInitial || !hasInteracted()) return;
+    const controller = new AbortController();
+    fetch(`/api/takes?nodeId=${nodeId}`, { signal: controller.signal }).then(async (response) => {
+      if (!response.ok) return;
+      const fresh = (await response.json()).takes as RComment[];
+      const known = new Set(fresh.map((comment) => comment.id));
+      // Keep anything posted in the moment between page load and this answer.
+      setComments((current) => [...fresh, ...current.filter((comment) => !known.has(comment.id))]);
+    }).catch(() => { /* the public view stays */ });
+    return () => controller.abort();
+  }, [nodeId, hasInitial]);
 
   // When the viewer changes their vote on this law, their comments' badges follow.
   useEffect(() => onPostVote(({ nodeId: votedNode, vote }) => {
@@ -151,7 +178,7 @@ export function Comments({ nodeId, initial, title }: { nodeId: number; initial: 
   return <section id="comments" className={styles.comments} data-testid="comments">
     <p className={styles.commentsHead}>all {comments.length} argument{comments.length === 1 ? "" : "s"} · sorted by: <b>best</b></p>
     <CommentForm nodeId={nodeId} parentId={null} onPosted={onPosted} />
-    {roots.map((comment) => <CommentNode key={comment.id} comment={comment} childrenOf={childrenOf} nodeId={nodeId} title={title} onPosted={onPosted} onVoted={onVoted} />)}
+    {roots.map((comment) => <CommentNode key={comment.id} comment={comment} childrenOf={childrenOf} nodeId={nodeId} title={title} now={now} onPosted={onPosted} onVoted={onVoted} />)}
     {roots.length === 0 && <p className={styles.commentsEmpty}>no arguments yet — make the first case</p>}
   </section>;
 }

@@ -81,3 +81,18 @@ The Playwright suite exercises desktop/mobile browse and pagination, autocomplet
 Set `DATABASE_URL`, a strong `VOTER_HASH_SECRET`, and `NEXT_PUBLIC_BASE_URL`. Upstash is activated when both `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` exist; otherwise local Postgres provides rate accounting. Plausible loads only when `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set. Neon’s direct connection should be used for ingestion and migrations.
 
 Anonymous identifiers, IPs, and user agents are stored only as salted hashes. Public totals are signals, not referenda.
+
+## Caching
+
+The database bills for every minute it is awake, and crawlers request a page every few seconds, so pages must not query it on an ordinary view. Law pages are statically cached per URL, and every page's reads go through `lib/cached.ts`, whose entries survive deployments and never expire on a timer. They are purged by tag (`lib/cache-tags.ts`): votes and arguments purge the affected law and feeds automatically.
+
+**After changing production data directly** (ingest, publishing AI content, `ops/*.sql`), the site keeps showing the old content until you purge it. Redeploying does not help.
+
+```bash
+vercel cache invalidate --tag corpus
+```
+
+Two rules keep this working:
+
+- Law pages (`app/(reader)/r/[titleSlug]/[section]`) must not read cookies, headers, or search params. One such read turns all ~50k pages back into a database query per view. Per-viewer state loads client-side, and only for browsers that have voted or argued.
+- When the shape of anything returned from `lib/cached.ts` changes, bump `V` there. Old entries outlive the deploy that changed the code.

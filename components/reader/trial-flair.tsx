@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { docketDayKey } from "@/lib/docket-day";
 import styles from "@/app/(reader)/reader.module.css";
 
 export type TrialInfo = { day: string; keepCount: number; dissolveCount: number; closed: boolean };
@@ -10,7 +11,9 @@ export type TrialInfo = { day: string; keepCount: number; dissolveCount: number;
  */
 export function TrialFlair({ trial }: { trial: TrialInfo | null }) {
   if (!trial) return null;
-  if (!trial.closed) return <Link href="/docket" className={styles.trialFlair} data-verdict="open">⚖ on trial today</Link>;
+  // An open row from a past day is a trial whose verdict hasn't been stamped
+  // yet (or a cached copy from before it was) — say nothing rather than "today".
+  if (!trial.closed) return trial.day === docketDayKey() ? <Link href="/docket" className={styles.trialFlair} data-verdict="open">⚖ on trial today</Link> : null;
   const total = trial.keepCount + trial.dissolveCount;
   const date = new Date(`${trial.day}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   if (total === 0) return <span className={styles.trialFlair} data-verdict="mistrial" title={`stood trial ${date} — no jurors voted`}>⚖ mistrial</span>;

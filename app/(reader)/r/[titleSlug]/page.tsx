@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { getTitleInfo } from "@/lib/data";
+import { getRPostsCached, getTitleInfoCached } from "@/lib/cached";
 import { subredditPathSlug, subredditSlug, titleNumberFromSlug } from "@/lib/title-names";
 import { RHeader } from "@/components/reader/header";
 import { PostList } from "@/components/reader/post-list";
 import { TitleWiki } from "@/components/reader/title-wiki";
-import { getRPosts, isSort, R_SORTS, type RSort } from "@/lib/reddit-data";
+import { isSort, R_SORTS, type RSort } from "@/lib/reddit-data";
 import { subredditUrl, wikiUrl } from "@/lib/reddit-format";
 import styles from "../../reader.module.css";
 
 type Props = { params: Promise<{ titleSlug: string }>; searchParams: Promise<{ sort?: string; page?: string; view?: string }> };
-export const dynamic = "force-dynamic";
 const PAGE_SIZE = 25;
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
@@ -37,7 +36,7 @@ export default async function Subreddit({ params, searchParams }: Props) {
   const pageUrl = (target: number) => `/r/${canonical}?${new URLSearchParams({ ...(sort !== "hot" ? { sort } : {}), ...(target > 1 ? { page: String(target) } : {}) })}`.replace(/\?$/, "");
   const wikiPageUrl = (target: number) => `/r/${canonical}?${new URLSearchParams({ view: "wiki", ...(target > 1 ? { page: String(target) } : {}) })}`;
   if (titleSlug !== canonical) permanentRedirect(wikiActive ? wikiPageUrl(page) : pageUrl(page));
-  const info = await getTitleInfo(titleNum);
+  const info = await getTitleInfoCached(titleNum);
   if (!info) notFound();
   const tabs = <nav className={styles.tabs} aria-label="Title views">
     {R_SORTS.map((item) => <Link key={item.key} data-testid={`sort-${item.key}`} data-active={!wikiActive && item.key === sort || undefined} href={item.key === "hot" ? `/r/${canonical}` : `/r/${canonical}?sort=${item.key}`}>{item.label}</Link>)}
@@ -51,7 +50,7 @@ export default async function Subreddit({ params, searchParams }: Props) {
     <footer className={styles.footer}>Official text is public domain. Definitions shown here are excerpts — the defining section is the authority.</footer>
   </div>;
 
-  const posts = await getRPosts(sort, titleNum, PAGE_SIZE, (page - 1) * PAGE_SIZE);
+  const posts = await getRPostsCached(sort, titleNum, PAGE_SIZE, (page - 1) * PAGE_SIZE);
   const pageCount = Math.max(1, Math.ceil(info.sectionCount / PAGE_SIZE));
 
   return <div className={styles.page}>
