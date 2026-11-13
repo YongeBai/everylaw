@@ -7,7 +7,9 @@ const nextConfig: NextConfig = {
     // Legacy named title slugs on law pages (/r/title-18-CRIMES…/700). Done here
     // rather than in the law page: that page is statically cached per URL, so a
     // redirect issued there would be generated and stored once per spelling.
-    { source: "/r/title-:num(\\d+)-:name/:section((?!wiki$)[^/]+)", destination: "/r/title-:num/:section", permanent: true },
+    // :name needs its own pattern: after a "-" the default one stops at the next
+    // hyphen, so it would match title-29-LABOR but not title-18-CRIMES-AND-….
+    { source: "/r/title-:num(\\d+)-:name([^/]+)/:section((?!wiki$)[^/]+)", destination: "/r/title-:num/:section", permanent: true },
     { source: "/r/history", destination: "/history", permanent: true },
     { source: "/r/random", destination: "/random", permanent: true },
     { source: "/titles", destination: "/r", permanent: true },
